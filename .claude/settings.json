@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5173)",
+      "WebSearch",
+      "WebFetch(domain:unsplash.com)",
+      "Bash(curl -s \"http://localhost:5177/\")",
+      
+
+    ]
+  }
+}
