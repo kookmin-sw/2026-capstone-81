@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nomadiq</string>
+    <string name="title_activity_main">Nomadiq</string>
+    <string name="package_name">com.nomadiq.app</string>
+    <string name="custom_url_scheme">com.nomadiq.app</string>
+</resources>
