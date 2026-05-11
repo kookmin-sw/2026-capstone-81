@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Grid3X3, MapPin, BookOpen, User } from 'lucide-react'
+import { Home, Grid3X3, MapPin, BookOpen, MessageCircle, User } from 'lucide-react'
 import { useLang } from '../context/LangContext'
 
 export default function BottomNav() {
@@ -12,6 +12,7 @@ export default function BottomNav() {
     { path: '/map', icon: MapPin, label: lang === 'kr' ? '내 주변' : lang === 'mn' ? 'Ойролцоо' : 'Nearby' },
     { path: '/home', icon: Home, label: lang === 'kr' ? '홈' : lang === 'mn' ? 'Нүүр' : 'Home' },
     { path: '/blog', icon: BookOpen, label: lang === 'kr' ? '블로그' : lang === 'mn' ? 'Блог' : 'Blog' },
+    { path: '/chat', icon: MessageCircle, label: lang === 'kr' ? 'AI챗' : lang === 'mn' ? 'AI чат' : 'AI Chat' },
     { path: '/profile', icon: User, label: lang === 'kr' ? '마이페이지' : lang === 'mn' ? 'Миний хуудас' : 'My Page' },
   ]
 

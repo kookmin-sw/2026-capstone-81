@@ -30,6 +30,12 @@ import MobilePlanner from './pages/mobile/MobilePlanner'
 import MobileMap from './pages/mobile/MobileMap'
 import MobileProfile from './pages/mobile/MobileProfile'
 
+// Shared pages (used in both mobile and desktop)
+import { BlogList, BlogDetail } from './pages/Blog'
+import Culture from './pages/Culture'
+import Budget from './pages/Budget'
+import Restaurants from './pages/Restaurants'
+
 const isMobile = () => window.innerWidth < 768
 
 function DesktopApp() {
@@ -69,10 +75,18 @@ function MobileApp() {
       <Route path="/home" element={<MobileHome />} />
       <Route path="/explore" element={<MobileExplore />} />
       <Route path="/explore/:id" element={<MobileExplore />} />
-      <Route path="/planner" element={<MobilePlanner />} />
+      <Route path="/planner" element={<ProtectedRoute><MobilePlanner /></ProtectedRoute>} />
       <Route path="/map" element={<MobileMap />} />
-      <Route path="/profile" element={<MobileProfile />} />
-      <Route path="/saved" element={<MobileProfile />} />
+      <Route path="/profile" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
+      <Route path="/saved" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
+      <Route path="/blog" element={<BlogList />} />
+      <Route path="/blog/:id" element={<BlogDetail />} />
+      <Route path="/post/:id" element={<UserBlogDetail />} />
+      <Route path="/write" element={<ProtectedRoute><WriteBlog /></ProtectedRoute>} />
+      <Route path="/chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
+      <Route path="/culture" element={<Culture />} />
+      <Route path="/budget" element={<Budget />} />
+      <Route path="/restaurants" element={<Restaurants />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   )

@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
-import { Home, Search, Map, Sparkles, User } from 'lucide-react'
+import { Home, Search, Map, Sparkles, BookOpen, MessageCircle, User } from 'lucide-react'
 
 export default function MobileLayout({ children }) {
   const navigate = useNavigate()
@@ -10,7 +10,8 @@ export default function MobileLayout({ children }) {
   const tabs = [
     { icon: Home, label: { kr: '홈', en: 'Home', mn: 'Нүүр' }, path: '/home' },
     { icon: Search, label: { kr: '검색', en: 'Search', mn: 'Хайх' }, path: '/explore' },
-    { icon: Sparkles, label: { kr: 'AI', en: 'AI', mn: 'AI' }, path: '/planner' },
+    { icon: BookOpen, label: { kr: '블로그', en: 'Blog', mn: 'Блог' }, path: '/blog' },
+    { icon: MessageCircle, label: { kr: 'AI챗', en: 'AI Chat', mn: 'AI чат' }, path: '/chat' },
     { icon: Map, label: { kr: '지도', en: 'Map', mn: 'Газар' }, path: '/map' },
     { icon: User, label: { kr: '내 계정', en: 'My', mn: 'Миний' }, path: '/profile' },
   ]
