@@ -1,42 +1,112 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Send, Sparkles } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, MapPin, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import { useLang } from '../context/LangContext'
 import BottomNav from '../components/BottomNav'
+import { chatWithAI } from '../utils/api'
 
-const mockReplies = {
-  kr: [
-    '몽골의 최고 여행 시즌은 6~8월 여름입니다. 나담 축제(7월 11~13일)를 포함한 여행을 강력 추천해요! 🎉',
-    '테를지 국립공원은 울란바토르에서 약 1시간 거리로, 당일치기 또는 1박 2일 일정으로 딱입니다. 기암괴석과 넓은 초원이 정말 아름다워요 🏔️',
-    '몽골 입국 시 한국 여권 소지자는 비자 없이 최대 30일 체류 가능합니다. 여행자 보험은 꼭 챙기세요! 🛂',
-    '고비 사막 투어는 보통 3~5일 일정으로, 울란바토르에서 국내선이나 지프로 이동합니다. 예산은 약 80~150만원 정도 예상하세요 💰',
-    '꼭 먹어봐야 할 음식은 허르헉(Khorkhog), 보즈(Buuz), 수테차이(밀크티)입니다. 현지 게르 캠프에서 맛보는 허르헉은 잊을 수 없어요! 🍖',
-  ],
-  en: [
-    "Mongolia's best travel season is June-August. I strongly recommend including the Naadam Festival (July 11-13) in your trip! 🎉",
-    'Terelj National Park is about 1 hour from Ulaanbaatar, perfect for a day trip or overnight stay. The rock formations and vast steppes are stunning! 🏔️',
-    'Korean passport holders can enter Mongolia visa-free for up to 30 days. Do not forget to get travel insurance! 🛂',
-    'Gobi Desert tours typically take 3-5 days, traveling by domestic flight or 4WD from Ulaanbaatar. Budget around $600–1200 USD. 💰',
-    'Must-try foods: Khorkhog, Buuz dumplings, and Suutei tsai (salted milk tea). Trying Khorkhog in a local ger camp is unforgettable! 🍖',
-  ],
-  mn: [
-    'Монголд аялах хамгийн сайн цаг бол 6–8 дугаар сарын зун юм. Наадамыг (7/11-13) оролцуулсан аялал зөвлөж байна! 🎉',
-    'Тэрэлжийн байгалийн цогцолбор Улаанбаатараас ойролцоогоор 1 цагийн зайд байдаг. Өдрийн аялал эсвэл 1 шөнийн аялалд тохиромжтой! 🏔️',
-    'Монголд зочлох Солонгос иргэд 30 хүртэл хоног визгүй байж болно. Аяллын даатгал авахаа мартуузай! 🛂',
-    'Говийн аялал ерөнхийдөө 3-5 өдрийн хуваариар явагддаг. Улаанбаатараас дотоодын нислэгээр явна. 💰',
-    'Заавал амтлах хоолнуудад хорхог, бууз, сүүтэй цай орно. Гэрт хийсэн хорхог мартагдашгүй! 🍖',
-  ],
+// Parse [MAP_UPDATE]...[/MAP_UPDATE] from AI response text
+function parseMapUpdate(text) {
+  const match = text.match(/\[MAP_UPDATE\]([\s\S]*?)\[\/MAP_UPDATE\]/)
+  if (!match) return { places: null, cleanText: text }
+  try {
+    const data = JSON.parse(match[1].trim())
+    const cleanText = text.replace(/\s*\[MAP_UPDATE\][\s\S]*?\[\/MAP_UPDATE\]/, '').trim()
+    return { places: Array.isArray(data.places) && data.places.length > 0 ? data.places : null, cleanText }
+  } catch {
+    return { places: null, cleanText: text }
+  }
+}
+
+function createNumberedIcon(n) {
+  const svg = `<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 0C6.27 0 0 6.27 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.27 21.73 0 14 0Z" fill="#2F855A"/>
+    <text x="14" y="19" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="bold" font-family="sans-serif">${n}</text>
+  </svg>`
+  return L.divIcon({ html: svg, iconSize: [28, 36], iconAnchor: [14, 36], className: '' })
+}
+
+function FitBounds({ places }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!places || places.length === 0) return
+    if (places.length === 1) {
+      map.setView([places[0].lat, places[0].lng], 8)
+    } else {
+      const bounds = L.latLngBounds(places.map(p => [p.lat, p.lng]))
+      map.fitBounds(bounds, { padding: [30, 30] })
+    }
+  }, [places, map])
+  return null
+}
+
+function TaxiModal({ place, onClose, tr }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-6"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
+          <MapPin size={26} className="text-white" />
+        </div>
+        <p className="text-xs text-gray-400 mb-3 font-medium">{tr('taxi_modal_tip')}</p>
+        <p className="text-3xl font-black text-gray-900 mb-2 leading-tight">{place.name_mn}</p>
+        <p className="text-xl font-bold text-primary mb-4">{place.taxi_phrase}</p>
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-6">
+          <span>{place.name_ko}</span>
+          <span>·</span>
+          <span>{place.name_en}</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full py-3 bg-gray-100 rounded-2xl text-sm font-bold text-gray-700 active:bg-gray-200 transition-colors"
+        >
+          {tr('taxi_modal_close')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PlaceCard({ place, onTaxi, tr }) {
+  return (
+    <div className="flex-shrink-0 bg-primary/5 border border-primary/15 rounded-2xl px-3 py-2.5 min-w-[150px] max-w-[160px]">
+      <div className="flex items-center gap-1 mb-1.5">
+        <MapPin size={10} className="text-primary" />
+        <span className="text-[10px] font-bold text-primary uppercase tracking-wide">Place</span>
+      </div>
+      <p className="text-xs font-bold text-gray-900 truncate">{place.name_ko}</p>
+      <p className="text-[10px] text-gray-500 truncate">{place.name_en}</p>
+      <p className="text-[10px] text-gray-400 truncate mb-2">{place.name_mn}</p>
+      <button
+        onClick={onTaxi}
+        className="w-full flex items-center justify-center gap-1 py-1.5 bg-primary text-white rounded-xl text-[10px] font-bold active:opacity-80 transition-opacity"
+      >
+        {tr('taxi_btn')}
+      </button>
+    </div>
+  )
 }
 
 export default function AIChat() {
   const navigate = useNavigate()
-  const { tr, lang } = useLang()
-  // Store greeting as a key so it re-renders correctly when lang changes
+  const { tr } = useLang()
   const [messages, setMessages] = useState([
     { role: 'ai', msgKey: 'chat_greeting' },
   ])
+  const [history, setHistory] = useState([])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
+  const [error, setError] = useState('')
+  const [mapPlaces, setMapPlaces] = useState([])
+  const [showMap, setShowMap] = useState(true)
+  const [taxiPlace, setTaxiPlace] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -49,15 +119,31 @@ export default function AIChat() {
     const trimmed = (text ?? input).trim()
     if (!trimmed) return
     setInput('')
+    setError('')
     setMessages(prev => [...prev, { role: 'user', text: trimmed }])
     setThinking(true)
-    await new Promise(r => setTimeout(r, 900 + Math.random() * 700))
-    const replies = mockReplies[lang] || mockReplies.kr
-    setMessages(prev => [...prev, { role: 'ai', text: replies[Math.floor(Math.random() * replies.length)] }])
-    setThinking(false)
+    try {
+      const rawReply = await chatWithAI(history, trimmed)
+      const { places, cleanText } = parseMapUpdate(rawReply)
+      if (places) {
+        setMapPlaces(places)
+        setShowMap(true)
+      }
+      setHistory(prev => [
+        ...prev,
+        { role: 'user', content: trimmed },
+        { role: 'assistant', content: rawReply },
+      ])
+      setMessages(prev => [...prev, { role: 'ai', text: cleanText, places }])
+    } catch {
+      setError('응답을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setThinking(false)
+    }
   }
 
   const suggestedQs = [tr('chat_q1'), tr('chat_q2'), tr('chat_q3')]
+  const hasMap = mapPlaces.length > 0
 
   return (
     <div className="flex flex-col h-full bg-[#F8F9FB]">
@@ -86,23 +172,39 @@ export default function AIChat() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} gap-2 items-end`}>
-            {msg.role === 'ai' && (
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center flex-shrink-0">
-                <Sparkles size={12} className="text-white" />
+          <div key={i}>
+            <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} gap-2 items-end`}>
+              {msg.role === 'ai' && (
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <Sparkles size={12} className="text-white" />
+                </div>
+              )}
+              <div
+                className={`max-w-[78%] px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                  msg.role === 'user'
+                    ? 'bg-primary text-white rounded-2xl rounded-br-md shadow-sm shadow-primary/20'
+                    : 'bg-white text-gray-800 rounded-2xl rounded-bl-md shadow-sm border border-gray-100'
+                }`}
+              >
+                {resolveText(msg)}
+              </div>
+            </div>
+            {/* Place cards inline under AI messages that have map data */}
+            {msg.role === 'ai' && msg.places && msg.places.length > 0 && (
+              <div className="mt-2 ml-9 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                {msg.places.map((place, pi) => (
+                  <PlaceCard
+                    key={pi}
+                    place={place}
+                    onTaxi={() => setTaxiPlace(place)}
+                    tr={tr}
+                  />
+                ))}
               </div>
             )}
-            <div
-              className={`max-w-[78%] px-4 py-2.5 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-primary text-white rounded-2xl rounded-br-md shadow-sm shadow-primary/20'
-                  : 'bg-white text-gray-800 rounded-2xl rounded-bl-md shadow-sm border border-gray-100'
-              }`}
-            >
-              {resolveText(msg)}
-            </div>
           </div>
         ))}
+
         {thinking && (
           <div className="flex items-end gap-2">
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center flex-shrink-0">
@@ -117,8 +219,66 @@ export default function AIChat() {
             </div>
           </div>
         )}
+        {error && (
+          <div className="text-center text-xs text-red-400 py-2">{error}</div>
+        )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Mini Map Panel — shown when AI mentions places */}
+      {hasMap && (
+        <div className="flex-shrink-0 bg-white border-t border-gray-100 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+          <button
+            onClick={() => setShowMap(p => !p)}
+            className="w-full flex items-center justify-between px-4 py-2.5"
+          >
+            <div className="flex items-center gap-1.5">
+              <MapPin size={13} className="text-primary" />
+              <span className="text-xs font-bold text-gray-800">{tr('chat_map_title')}</span>
+              <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full font-medium">
+                {mapPlaces.length}{tr('chat_map_places')}
+              </span>
+            </div>
+            {showMap
+              ? <ChevronDown size={14} className="text-gray-400" />
+              : <ChevronUp size={14} className="text-gray-400" />
+            }
+          </button>
+          {showMap && (
+            <div className="h-[175px] relative">
+              <MapContainer
+                center={[47.5, 103.5]}
+                zoom={5}
+                style={{ height: '100%', width: '100%' }}
+                zoomControl={false}
+                scrollWheelZoom={false}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; OpenStreetMap'
+                />
+                {mapPlaces.map((p, i) => (
+                  <Marker
+                    key={i}
+                    position={[p.lat, p.lng]}
+                    icon={createNumberedIcon(i + 1)}
+                  />
+                ))}
+                {mapPlaces.length > 1 && (
+                  <Polyline
+                    positions={mapPlaces.map(p => [p.lat, p.lng])}
+                    color="#2F855A"
+                    weight={2}
+                    dashArray="6,5"
+                    opacity={0.75}
+                  />
+                )}
+                <FitBounds places={mapPlaces} />
+              </MapContainer>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Suggested questions */}
       <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide flex-shrink-0">
@@ -155,6 +315,15 @@ export default function AIChat() {
       </div>
 
       <BottomNav />
+
+      {/* Taxi modal overlay */}
+      {taxiPlace && (
+        <TaxiModal
+          place={taxiPlace}
+          onClose={() => setTaxiPlace(null)}
+          tr={tr}
+        />
+      )}
     </div>
   )
 }

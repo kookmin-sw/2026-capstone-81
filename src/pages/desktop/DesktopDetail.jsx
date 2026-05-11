@@ -1,9 +1,12 @@
-import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { useLang } from '../../context/LangContext'
+import { useAuth } from '../../context/AuthContext'
+import { db } from '../../firebase'
 import { locations } from '../../data/locations'
 import { Star, Clock, CalendarDays, ArrowLeft, Heart, MapPin, Share2, Sparkles, ChevronRight } from 'lucide-react'
 
@@ -18,7 +21,26 @@ export default function DesktopDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { lang } = useLang()
+  const { user } = useAuth()
   const [liked, setLiked] = useState(false)
+
+  useEffect(() => {
+    if (!user || !db) return
+    getDoc(doc(db, 'users', user.uid, 'savedPlaces', id))
+      .then(snap => setLiked(snap.exists()))
+      .catch(() => {})
+  }, [user, id])
+
+  const toggleLike = async () => {
+    if (!user || !db) { setLiked(p => !p); return }
+    const ref = doc(db, 'users', user.uid, 'savedPlaces', id)
+    if (liked) {
+      await deleteDoc(ref).catch(() => {})
+    } else {
+      await setDoc(ref, { locationId: Number(id), savedAt: serverTimestamp() }).catch(() => {})
+    }
+    setLiked(p => !p)
+  }
 
   const loc = locations.find(l => l.id === Number(id))
   const related = locations.filter(l => l.id !== Number(id) && l.category === loc?.category).slice(0, 3)
@@ -56,7 +78,7 @@ export default function DesktopDetail() {
             <Share2 size={16} />
           </button>
           <button
-            onClick={() => setLiked(!liked)}
+            onClick={toggleLike}
             className={`w-10 h-10 backdrop-blur-md rounded-full flex items-center justify-center border transition-all ${liked ? 'bg-red-500 border-red-500 text-white' : 'bg-white/20 border-white/30 text-white hover:bg-white/30'}`}
           >
             <Heart size={16} className={liked ? 'fill-white' : ''} />
@@ -166,7 +188,7 @@ export default function DesktopDetail() {
               <h3 className="font-black text-gray-900 mb-4">여행 정보</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <div className="w-9 h-9 bg-primary-light rounded-lg flex items-center justify-center">
                     <Clock size={16} className="text-primary" />
                   </div>
                   <div>
@@ -206,7 +228,7 @@ export default function DesktopDetail() {
               </p>
               <button
                 onClick={() => navigate('/planner')}
-                className="w-full py-2.5 bg-white text-primary font-bold text-sm rounded-xl hover:bg-blue-50 transition-colors"
+                className="w-full py-2.5 bg-white text-primary font-bold text-sm rounded-xl hover:bg-primary-light transition-colors"
               >
                 일정 만들기 →
               </button>
@@ -229,3 +251,5 @@ export default function DesktopDetail() {
     </div>
   )
 }
+
+

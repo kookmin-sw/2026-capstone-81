@@ -1,14 +1,21 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useLang } from '../context/LangContext'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 import { Calculator, TrendingUp } from 'lucide-react'
 
-const rates = {
-  budget: { flight: 80, hotel: 5, food: 3, activity: 4, transport: 2 },
-  mid: { flight: 120, hotel: 10, food: 6, activity: 8, transport: 4 },
-  luxury: { flight: 200, hotel: 25, food: 15, activity: 20, transport: 10 },
+// Base rates in USD — realistic Mongolia travel costs (per person)
+// flight = round-trip Seoul↔Ulaanbaatar (one-time), others = per day per person
+const ratesUSD = {
+  budget: { flight: 265, hotel: 15, food: 8, activity: 10, transport: 5 },
+  mid: { flight: 450, hotel: 50, food: 20, activity: 30, transport: 15 },
+  luxury: { flight: 800, hotel: 150, food: 50, activity: 70, transport: 30 },
 }
+
+// Approximate exchange rates (1 USD = X currency)
+const exchangeRates = { en: 1, kr: 1480, mn: 3580 }
+const currencySymbols = { en: '$', kr: '₩', mn: '₮' }
+const currencyNames = { en: 'USD', kr: 'KRW', mn: 'MNT' }
 
 const styleEmoji = { budget: '🎒', mid: '✈️', luxury: '💎' }
 
@@ -20,16 +27,28 @@ export default function Budget() {
   const [result, setResult] = useState(null)
 
   const calculate = () => {
-    const r = rates[style]
+    const r = ratesUSD[style]
+    const rate = exchangeRates[lang] || 1
+    const convert = (usd) => Math.round(usd * rate)
     const breakdown = {
-      flight: r.flight * people,
-      hotel: r.hotel * days * people,
-      food: r.food * days * people,
-      activity: r.activity * days * people,
-      transport: r.transport * days * people,
+      flight: convert(r.flight * people),
+      hotel: convert(r.hotel * days * people),
+      food: convert(r.food * days * people),
+      activity: convert(r.activity * days * people),
+      transport: convert(r.transport * days * people),
     }
     breakdown.total = Object.values(breakdown).reduce((a, b) => a + b, 0)
     setResult(breakdown)
+  }
+
+  const sym = currencySymbols[lang] || '$'
+  const curName = currencyNames[lang] || 'USD'
+
+  const formatMoney = (amount) => {
+    if (lang === 'mn' || lang === 'kr') {
+      return `${amount.toLocaleString()}${sym}`
+    }
+    return `${sym}${amount.toLocaleString()}`
   }
 
   const labelMap = {
@@ -43,7 +62,7 @@ export default function Budget() {
 
   const styleColors = {
     budget: 'bg-emerald-500 shadow-emerald-200',
-    mid: 'bg-blue-500 shadow-blue-200',
+    mid: 'bg-primary shadow-primary/20',
     luxury: 'bg-purple-500 shadow-purple-200',
   }
 
@@ -136,7 +155,7 @@ export default function Budget() {
                   <TrendingUp size={14} className="text-emerald-600" />
                   <p className="text-xs text-emerald-700 font-semibold">{tr('budget_result')}</p>
                 </div>
-                <p className="text-3xl font-black text-emerald-600">${result.total} USD</p>
+                <p className="text-3xl font-black text-emerald-600">{formatMoney(result.total)}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {days} {tr('budget_days_unit')} · {people} {tr('budget_people_unit')} · {style === 'budget' ? tr('budget_type_budget') : style === 'mid' ? tr('budget_type_mid') : tr('budget_type_luxury')}
                 </p>
@@ -154,7 +173,7 @@ export default function Budget() {
                           <span className="text-sm text-gray-700 font-medium">{label}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm font-bold text-gray-900">${result[key]}</span>
+                          <span className="text-sm font-bold text-gray-900">{formatMoney(result[key])}</span>
                           <span className="text-xs text-gray-400 ml-1">({pct}%)</span>
                         </div>
                       </div>
@@ -166,7 +185,7 @@ export default function Budget() {
                 })}
                 <div className="flex justify-between pt-3 border-t border-gray-100 mt-1">
                   <span className="text-sm font-black text-gray-900">{tr('budget_total')}</span>
-                  <span className="text-sm font-black text-emerald-600">${result.total} USD</span>
+                  <span className="text-sm font-black text-emerald-600">{formatMoney(result.total)}</span>
                 </div>
               </div>
             </div>
@@ -177,3 +196,6 @@ export default function Budget() {
     </div>
   )
 }
+
+
+

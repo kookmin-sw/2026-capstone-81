@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Search, Star, MapPin, Clock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
@@ -13,7 +13,7 @@ const FILTERS = [
   { key: '$$$', kr: '고급', en: 'Fine', mn: 'Тансаг' },
 ]
 
-const priceColor = { '$': 'text-emerald-600 bg-emerald-50', '$$': 'text-blue-600 bg-blue-50', '$$$': 'text-purple-600 bg-purple-50' }
+const priceColor = { '$': 'text-emerald-600 bg-emerald-50', '$$': 'text-secondary bg-primary-light', '$$$': 'text-purple-600 bg-purple-50' }
 
 export default function Restaurants() {
   const { lang } = useLang()
@@ -128,3 +128,5 @@ export default function Restaurants() {
     </div>
   )
 }
+
+

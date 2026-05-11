@@ -4,9 +4,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#3B6FF0',
-        'primary-dark': '#2855CC',
-        'navy': '#0A0E2A',
+        primary: '#2F855A',
+        'primary-dark': '#276749',
+        'primary-light': '#C6F6D5',
+        'secondary': '#38A169',
+        'navy': '#1a4731',
       },
       fontFamily: {
         sans: ['Pretendard', 'system-ui', 'sans-serif'],

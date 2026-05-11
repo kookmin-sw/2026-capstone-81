@@ -1,8 +1,8 @@
-import { Star, MapPin } from 'lucide-react'
+﻿import { Star, MapPin } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 
-const priceColor = { '$': 'text-emerald-600', '$$': 'text-blue-600', '$$$': 'text-purple-600' }
+const priceColor = { '$': 'text-emerald-600', '$$': 'text-secondary', '$$$': 'text-purple-600' }
 
 export default function RestaurantCard({ restaurant, size = 'sm' }) {
   const { lang } = useLang()
@@ -67,3 +67,5 @@ export default function RestaurantCard({ restaurant, size = 'sm' }) {
     </div>
   )
 }
+
+

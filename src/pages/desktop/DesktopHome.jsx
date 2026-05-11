@@ -1,10 +1,11 @@
-import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
 import { blogs } from '../../data/blogs'
 import { restaurants } from '../../data/restaurants'
 import { Search, Star, Clock, CalendarDays, Sparkles, MapPin, ArrowRight, ChevronRight, UtensilsCrossed } from 'lucide-react'
+
 
 const CATEGORIES = [
   { key: 'all', emoji: '🌍' },
@@ -24,17 +25,30 @@ export default function DesktopHome() {
   const navigate = useNavigate()
   const { lang, tr } = useLang()
   const [activeCategory, setActiveCategory] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [exchange, setExchange] = useState(null)
 
-  const filteredLocations = activeCategory === 'all'
-    ? locations
-    : locations.filter(l => l.category === activeCategory)
+  useEffect(() => {
+    fetch('https://api.frankfurter.app/latest?from=USD&to=MNT,KRW')
+      .then(r => r.json()).then(setExchange).catch(() => {})
+  }, [])
+
+  const filteredLocations = locations.filter(l => {
+    const matchCat = activeCategory === 'all' || l.category === activeCategory
+    if (!searchQuery) return matchCat
+    const q = searchQuery.toLowerCase()
+    return matchCat && (
+      Object.values(l.name).some(n => n.toLowerCase().includes(q)) ||
+      Object.values(l.description).some(d => d.toLowerCase().includes(q))
+    )
+  })
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]">
       {/* Hero */}
       <section className="relative h-[580px] overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1535728534313-e206f59bed23?auto=format&fit=crop&w=1800&q=85"
+          src="https://images.unsplash.com/photo-1575415868394-e3b78f3e9b3f?auto=format&fit=crop&w=1800&q=85"
           alt="Mongolia"
           className="w-full h-full object-cover"
         />
@@ -48,11 +62,11 @@ export default function DesktopHome() {
 
           <h1 className="text-5xl md:text-6xl font-black text-white leading-tight mb-4 drop-shadow-lg">
             {lang === 'kr' ? (
-              <>광활한<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">몽골</span>을 만나다</>
+              <>광활한<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-indigo-300">몽골</span>을 만나다</>
             ) : lang === 'en' ? (
-              <>Discover<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Mongolia</span></>
+              <>Discover<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-indigo-300">Mongolia</span></>
             ) : (
-              <><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Монгол</span>оо нээ</>
+              <><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-indigo-300">Монгол</span>оо нээ</>
             )}
           </h1>
           <p className="text-white/75 text-lg mb-10 max-w-md leading-relaxed">
@@ -70,39 +84,71 @@ export default function DesktopHome() {
                 <Search size={18} className="text-gray-400 flex-shrink-0" />
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
                   placeholder={tr('search_placeholder')}
-                  readOnly
-                  onClick={() => navigate('/explore')}
-                  className="flex-1 text-gray-600 placeholder-gray-400 outline-none text-sm bg-transparent cursor-pointer"
+                  className="flex-1 text-gray-600 placeholder-gray-400 outline-none text-sm bg-transparent"
                 />
               </div>
               <button
-                onClick={() => navigate('/explore')}
+                onClick={() => navigate(searchQuery.trim() ? `/explore?q=${encodeURIComponent(searchQuery.trim())}` : '/explore')}
                 className="px-5 py-3 bg-primary text-white font-bold rounded-xl text-sm shadow-md hover:bg-primary-dark transition-all"
               >
-                {lang === 'kr' ? '탐색' : lang === 'en' ? 'Search' : 'Хайх'}
+                {lang === 'kr' ? '검색' : lang === 'en' ? 'Search' : 'Хайх'}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md border-t border-white/15">
-          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-around">
-            {[
-              { num: '9+', label: lang === 'kr' ? '여행지' : lang === 'en' ? 'Destinations' : 'Газрууд' },
-              { num: '3', label: lang === 'kr' ? '언어 지원' : lang === 'en' ? 'Languages' : 'Хэл' },
-              { num: 'AI', label: lang === 'kr' ? '맞춤 설계' : lang === 'en' ? 'Powered' : 'Тусгай' },
-              { num: '4.8★', label: lang === 'kr' ? '평균 평점' : lang === 'en' ? 'Avg. Rating' : 'Үнэлгээ' },
-            ].map(({ num, label }) => (
-              <div key={label} className="text-center text-white">
-                <div className="text-xl font-black">{num}</div>
-                <div className="text-xs text-white/60 mt-0.5">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
+
+      {/* Exchange rates */}
+      {exchange && (
+        <section className="max-w-7xl mx-auto px-6 py-6">
+          <div className="w-72 bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between">
+            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-4">
+              {lang === 'kr' ? '환율' : lang === 'mn' ? 'Ханш' : 'Exchange Rate'}
+            </p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🇺🇸</span>
+                  <span className="text-sm font-bold text-gray-700">USD</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-gray-900">{(exchange.rates?.MNT ?? 0).toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">₮ MNT</p>
+                </div>
+              </div>
+              <div className="w-full h-px bg-gray-100" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🇰🇷</span>
+                  <span className="text-sm font-bold text-gray-700">KRW</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-gray-900">{(exchange.rates?.MNT / (exchange.rates?.KRW ?? 1) * 100).toFixed(1)}</p>
+                  <p className="text-[10px] text-gray-400">₮ / 100₩</p>
+                </div>
+              </div>
+              <div className="w-full h-px bg-gray-100" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🇲🇳</span>
+                  <span className="text-sm font-bold text-gray-700">MNT</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-gray-900">{(1 / (exchange.rates?.MNT ?? 1) * 100).toFixed(4)}</p>
+                  <p className="text-[10px] text-gray-400">$ / 100₮</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-300 mt-4 text-right">
+              {lang === 'kr' ? '기준: 1 USD' : 'Base: 1 USD'}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* AI Banner */}
       <section className="max-w-7xl mx-auto px-6 py-10">
@@ -174,7 +220,7 @@ export default function DesktopHome() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredLocations.slice(0, 6).map(loc => (
+          {(searchQuery ? filteredLocations : filteredLocations.slice(0, 6)).map(loc => (
             <div
               key={loc.id}
               onClick={() => navigate(`/explore/${loc.id}`)}
@@ -271,7 +317,7 @@ export default function DesktopHome() {
                 </div>
                 <span className={`absolute bottom-2 right-2 text-[10px] font-black px-2 py-0.5 rounded-full ${
                   r.price === '$' ? 'bg-emerald-100 text-emerald-700' :
-                  r.price === '$$' ? 'bg-blue-100 text-blue-700' :
+                  r.price === '$$' ? 'bg-primary-light text-primary-dark' :
                   'bg-purple-100 text-purple-700'
                 }`}>{r.price}</span>
               </div>
@@ -301,8 +347,8 @@ export default function DesktopHome() {
             {tr('view_all')} <ArrowRight size={15} />
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {blogs.slice(0, 3).map(blog => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {blogs.slice(0, 2).map(blog => (
             <div key={blog.id} onClick={() => navigate(`/blog/${blog.id}`)} className="group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div className="relative h-44 overflow-hidden">
                 <img src={blog.image} alt={blog.title[lang]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -329,15 +375,17 @@ export default function DesktopHome() {
               <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
                 <MapPin size={13} className="text-white" />
               </div>
-              <span className="text-xl font-black text-white">NOMAD<span className="text-primary">AI</span></span>
+              <span className="text-xl font-black text-white">Nomad<span className="text-primary">iq</span></span>
             </div>
             <p className="text-white/40 text-xs">
               {lang === 'kr' ? 'AI와 함께하는 몽골 여행 플래너' : lang === 'en' ? 'AI-powered Mongolia travel planner' : 'AI-тай монгол аяллын төлөвлөгч'}
             </p>
           </div>
-          <p className="text-white/25 text-xs">© 2026 NOMAD AI. All rights reserved.</p>
+          <p className="text-white/25 text-xs">© 2026 Nomadiq. All rights reserved.</p>
         </div>
       </footer>
     </div>
   )
 }
+
+

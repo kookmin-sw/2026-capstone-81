@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Star, Clock, Calendar, Heart, Share2, MapPin, Sparkles } from 'lucide-react'
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { useLang } from '../context/LangContext'
+import { useAuth } from '../context/AuthContext'
+import { db } from '../firebase'
 import { locations } from '../data/locations'
 import BottomNav from '../components/BottomNav'
 
@@ -9,7 +12,26 @@ export default function ExploreDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { lang, tr } = useLang()
+  const { user } = useAuth()
   const [liked, setLiked] = useState(false)
+
+  useEffect(() => {
+    if (!user || !db) return
+    getDoc(doc(db, 'users', user.uid, 'savedPlaces', id))
+      .then(snap => setLiked(snap.exists()))
+      .catch(() => {})
+  }, [user, id])
+
+  const toggleLike = async () => {
+    if (!user || !db) { setLiked(p => !p); return }
+    const ref = doc(db, 'users', user.uid, 'savedPlaces', id)
+    if (liked) {
+      await deleteDoc(ref).catch(() => {})
+    } else {
+      await setDoc(ref, { locationId: Number(id), savedAt: serverTimestamp() }).catch(() => {})
+    }
+    setLiked(p => !p)
+  }
 
   const loc = locations.find(l => l.id === Number(id))
   if (!loc) return <div className="p-8 text-center text-gray-400">{tr('no_results')}</div>
@@ -36,7 +58,7 @@ export default function ExploreDetail() {
               <Share2 size={16} className="text-white" />
             </button>
             <button
-              onClick={() => setLiked(!liked)}
+              onClick={toggleLike}
               className={`w-9 h-9 backdrop-blur-sm rounded-full flex items-center justify-center transition-all ${
                 liked ? 'bg-red-500' : 'bg-black/30'
               }`}

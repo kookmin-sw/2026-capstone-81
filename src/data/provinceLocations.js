@@ -1,0 +1,203 @@
+export const provinceLocations = [
+  // АРХАНГАЙ АЙМАГ
+  { id: 'arch-1', name: 'Чулуутын гол', province: 'Архангай', lat: 47.52, lng: 100.58 },
+  { id: 'arch-2', name: 'Хоргын тогоо', province: 'Архангай', lat: 48.18, lng: 99.82 },
+  { id: 'arch-3', name: 'Тэрхийн цагаан нуур', province: 'Архангай', lat: 48.15, lng: 99.72 },
+  { id: 'arch-4', name: 'Суварга хайрхан уул', province: 'Архангай', lat: 47.62, lng: 101.55 },
+  { id: 'arch-5', name: 'Тамирын гол', province: 'Архангай', lat: 47.35, lng: 102.18 },
+  { id: 'arch-6', name: 'Булган уул', province: 'Архангай', lat: 47.95, lng: 100.82 },
+  { id: 'arch-7', name: 'Тайхар чулуу', province: 'Архангай', lat: 47.32, lng: 101.83 },
+  { id: 'arch-8', name: 'Хар балгас', province: 'Архангай', lat: 47.28, lng: 102.72 },
+  { id: 'arch-9', name: 'Билгэ хааны цогцолбор', province: 'Архангай', lat: 47.05, lng: 103.10 },
+
+  // БАЯН-ӨЛГИЙ АЙМАГ
+  { id: 'bayanolgii-1', name: 'Ёлтын сав газар', province: 'Баян-Өлгий', lat: 49.20, lng: 90.22 },
+  { id: 'bayanolgii-2', name: 'Алтай таван богдын байгалийн цогцолборт газар', province: 'Баян-Өлгий', lat: 49.12, lng: 87.42 },
+  { id: 'bayanolgii-3', name: 'Потаны мөсөн гол', province: 'Баян-Өлгий', lat: 49.18, lng: 87.30 },
+  { id: 'bayanolgii-4', name: 'Бага Ойгарын цагаан салаагийн хадны сүг зураг', province: 'Баян-Өлгий', lat: 48.55, lng: 89.98 },
+  { id: 'bayanolgii-5', name: 'Бага Түргэний хүрхрээ', province: 'Баян-Өлгий', lat: 48.72, lng: 90.52 },
+  { id: 'bayanolgii-6', name: 'Толбо нуур', province: 'Баян-Өлгий', lat: 48.68, lng: 90.10 },
+  { id: 'bayanolgii-7', name: 'Ачит нуур', province: 'Баян-Өлгий', lat: 49.52, lng: 90.72 },
+
+  // БАЯНХОНГОР АЙМАГ
+  { id: 'bayankh-1', name: 'Цагаан агуй', province: 'Баянхонгор', lat: 44.62, lng: 100.52 },
+  { id: 'bayankh-2', name: 'Бичигтхад', province: 'Баянхонгор', lat: 46.38, lng: 99.10 },
+  { id: 'bayankh-3', name: 'Шатар чулуун хөшөө', province: 'Баянхонгор', lat: 46.20, lng: 100.28 },
+  { id: 'bayankh-4', name: 'Түрэгийн үеийн бичээс', province: 'Баянхонгор', lat: 46.72, lng: 100.95 },
+  { id: 'bayankh-5', name: 'Бүгийн цавийн хоолой', province: 'Баянхонгор', lat: 44.92, lng: 100.62 },
+  { id: 'bayankh-6', name: 'Шаргалжуутын халуун рашаан', province: 'Баянхонгор', lat: 46.62, lng: 100.42 },
+  { id: 'bayankh-7', name: 'Их Богд уул', province: 'Баянхонгор', lat: 45.12, lng: 100.42 },
+
+  // БУЛГАН АЙМАГ
+  { id: 'bulgan-1', name: 'Хөгнө тарна байгалийн цогцолборт газар', province: 'Булган', lat: 47.62, lng: 102.82 },
+  { id: 'bulgan-2', name: 'Уран тогоо уул', province: 'Булган', lat: 48.52, lng: 103.52 },
+  { id: 'bulgan-3', name: 'Шивээт улааны цогцолбор', province: 'Булган', lat: 49.02, lng: 103.92 },
+  { id: 'bulgan-4', name: 'Хар бухын балгас', province: 'Булган', lat: 48.82, lng: 103.72 },
+  { id: 'bulgan-5', name: 'Чин толгойн балгас', province: 'Булган', lat: 48.88, lng: 103.22 },
+  { id: 'bulgan-6', name: 'Бий булгын балгас', province: 'Булган', lat: 48.72, lng: 103.42 },
+  { id: 'bulgan-7', name: 'Могойн шинэ ус', province: 'Булган', lat: 49.22, lng: 103.62 },
+
+  // ГОВЬ-АЛТАЙ АЙМАГ
+  { id: 'govaltai-1', name: 'Ээж хайрхан уул', province: 'Говь-Алтай', lat: 45.62, lng: 95.72 },
+  { id: 'govaltai-2', name: 'Бурхан буудай уул', province: 'Говь-Алтай', lat: 46.02, lng: 94.52 },
+  { id: 'govaltai-3', name: 'Сутай хайрхан уул', province: 'Говь-Алтай', lat: 46.72, lng: 93.72 },
+  { id: 'govaltai-4', name: 'Цагаан голын хадны зураг', province: 'Говь-Алтай', lat: 46.52, lng: 96.22 },
+  { id: 'govaltai-5', name: 'Монгол элс', province: 'Говь-Алтай', lat: 45.32, lng: 95.42 },
+  { id: 'govaltai-6', name: 'Хасагт хайрхан уул', province: 'Говь-Алтай', lat: 46.62, lng: 95.02 },
+  { id: 'govaltai-7', name: 'Аж Богдын нуруу', province: 'Говь-Алтай', lat: 45.52, lng: 95.02 },
+  { id: 'govaltai-8', name: 'Эрээн нуур', province: 'Говь-Алтай', lat: 46.12, lng: 97.52 },
+  { id: 'govaltai-9', name: 'Шаахар толгой', province: 'Говь-Алтай', lat: 46.02, lng: 95.52 },
+
+  // ГОВЬСҮМБЭР АЙМАГ
+  { id: 'govsumb-1', name: 'Чойрын Богд уул', province: 'Говьсүмбэр', lat: 46.52, lng: 108.52 },
+  { id: 'govsumb-2', name: 'Зүүн жанжин Чойрын хийдийн туурь', province: 'Говьсүмбэр', lat: 46.50, lng: 108.38 },
+  { id: 'govsumb-3', name: 'Цагаан дарь эх', province: 'Говьсүмбэр', lat: 46.62, lng: 108.32 },
+  { id: 'govsumb-4', name: 'Дагвасүндэл бурхан', province: 'Говьсүмбэр', lat: 46.58, lng: 108.22 },
+  { id: 'govsumb-5', name: 'Хүүхдийн овоо', province: 'Говьсүмбэр', lat: 46.42, lng: 108.12 },
+  { id: 'govsumb-6', name: 'Дугар мээрэнгийн хөшөө', province: 'Говьсүмбэр', lat: 46.68, lng: 108.02 },
+  { id: 'govsumb-7', name: 'Цоорхойн рашаан', province: 'Говьсүмбэр', lat: 46.32, lng: 107.92 },
+
+  // ДАРХАН-УУЛ АЙМАГ
+  { id: 'darkhan-1', name: 'Тахилгат их дархан уул', province: 'Дархан-Уул', lat: 49.52, lng: 106.02 },
+  { id: 'darkhan-2', name: 'Дурлалын мод', province: 'Дархан-Уул', lat: 49.62, lng: 105.92 },
+  { id: 'darkhan-3', name: 'Шарын голын зосон зураг', province: 'Дархан-Уул', lat: 49.32, lng: 105.82 },
+  { id: 'darkhan-4', name: 'Буурал уулын булш', province: 'Дархан-Уул', lat: 49.42, lng: 105.72 },
+  { id: 'darkhan-5', name: 'Дүрс нарс', province: 'Дархан-Уул', lat: 49.52, lng: 105.62 },
+  { id: 'darkhan-6', name: 'Лам Дондовын рашаан', province: 'Дархан-Уул', lat: 49.65, lng: 105.82 },
+  { id: 'darkhan-7', name: 'Хүйтний голын хадны бичээс', province: 'Дархан-Уул', lat: 49.22, lng: 105.52 },
+
+  // ДОРНОГОВЬ АЙМАГ
+  { id: 'dorngov-1', name: 'Хамрын хийдийн цогцолбор', province: 'Дорноговь', lat: 44.72, lng: 110.12 },
+  { id: 'dorngov-2', name: 'Цагаан дарь эх', province: 'Дорноговь', lat: 44.52, lng: 110.42 },
+  { id: 'dorngov-3', name: 'Сүйхэнт, Өлгий хийд', province: 'Дорноговь', lat: 44.62, lng: 110.52 },
+  { id: 'dorngov-4', name: 'Цонжийн чулуу', province: 'Дорноговь', lat: 44.32, lng: 110.82 },
+  { id: 'dorngov-5', name: 'Бүрдэнэ булаг, Мөнхийн ам', province: 'Дорноговь', lat: 44.82, lng: 110.32 },
+  { id: 'dorngov-6', name: 'Эргэлийн зоо', province: 'Дорноговь', lat: 44.12, lng: 110.92 },
+  { id: 'dorngov-7', name: 'Нүдэнгийн хонхор', province: 'Дорноговь', lat: 44.22, lng: 111.22 },
+
+  // ДОРНОД АЙМАГ
+  { id: 'dornod-1', name: 'Чингисийн хэрмэн цав', province: 'Дорнод', lat: 47.92, lng: 113.12 },
+  { id: 'dornod-2', name: 'Хэрлэн Барс хотын туурь, цамхаг', province: 'Дорнод', lat: 47.32, lng: 115.32 },
+  { id: 'dornod-3', name: 'Буйр нуур', province: 'Дорнод', lat: 47.82, lng: 117.72 },
+  { id: 'dornod-4', name: 'Хайлангийн хадны хүн дүрст чулуу, дөрвөлжин булш', province: 'Дорнод', lat: 47.52, lng: 115.02 },
+  { id: 'dornod-5', name: 'Их бурхант чулуун бурханы цогцолбор', province: 'Дорнод', lat: 47.82, lng: 115.52 },
+  { id: 'dornod-6', name: 'Шонх таван толгойн хүн чулуун хөшөө', province: 'Дорнод', lat: 47.62, lng: 115.22 },
+  { id: 'dornod-7', name: 'Хамар даваа дээрх ялалтын хөшөө', province: 'Дорнод', lat: 47.42, lng: 118.02 },
+  { id: 'dornod-8', name: 'Халх гол', province: 'Дорнод', lat: 47.42, lng: 118.52 },
+  { id: 'dornod-9', name: 'Вангийн цагаан уул', province: 'Дорнод', lat: 47.22, lng: 116.32 },
+
+  // ДУНДГОВЬ АЙМАГ
+  { id: 'dundgov-1', name: 'Их газрын чулуу', province: 'Дундговь', lat: 45.52, lng: 106.52 },
+  { id: 'dundgov-2', name: 'Дэл уул', province: 'Дундговь', lat: 45.62, lng: 107.02 },
+  { id: 'dundgov-3', name: 'Бага газрын чулуу', province: 'Дундговь', lat: 45.72, lng: 107.22 },
+  { id: 'dundgov-4', name: 'Онгийн хийдийн туурь', province: 'Дундговь', lat: 44.92, lng: 104.32 },
+  { id: 'dundgov-5', name: 'Морин хуур', province: 'Дундговь', lat: 46.02, lng: 106.92 },
+  { id: 'dundgov-6', name: 'Өөш манхан', province: 'Дундговь', lat: 45.22, lng: 105.32 },
+  { id: 'dundgov-7', name: 'Дэлгэрхангай уул', province: 'Дундговь', lat: 46.32, lng: 106.72 },
+
+  // ЗАВХАН АЙМАГ
+  { id: 'zavkhan-1', name: 'Отгонтэнгэр хайрхан', province: 'Завхан', lat: 47.82, lng: 97.22 },
+  { id: 'zavkhan-2', name: 'Хар нуур', province: 'Завхан', lat: 48.22, lng: 93.52 },
+  { id: 'zavkhan-3', name: 'Загастайн давааны хүн чулуу', province: 'Завхан', lat: 48.32, lng: 97.52 },
+  { id: 'zavkhan-4', name: 'Бор хярын элсэн манхан, Мухартын гол', province: 'Завхан', lat: 47.92, lng: 97.82 },
+  { id: 'zavkhan-5', name: 'Тэсийн гол Нисэхийн шугуй', province: 'Завхан', lat: 48.62, lng: 96.02 },
+  { id: 'zavkhan-6', name: 'Их хайрхан уул', province: 'Завхан', lat: 49.12, lng: 96.52 },
+  { id: 'zavkhan-7', name: 'Дааган дэлийн буган чулуун хөшөө', province: 'Завхан', lat: 48.52, lng: 96.82 },
+  { id: 'zavkhan-8', name: 'Идэр голын буган хөшөөт дурсгал', province: 'Завхан', lat: 48.92, lng: 97.32 },
+  { id: 'zavkhan-9', name: 'Сангийн хэрмийн туурь', province: 'Завхан', lat: 49.32, lng: 97.02 },
+
+  // ОРХОН АЙМАГ
+  { id: 'orkhon-1', name: 'Зэрэглээ', province: 'Орхон', lat: 49.12, lng: 104.12 },
+  { id: 'orkhon-2', name: 'Айргийн гозгорын Хүннүгийн бүлэг дурсгалт газар', province: 'Орхон', lat: 49.02, lng: 104.22 },
+  { id: 'orkhon-3', name: 'Бөөрөнхий сайр хэмээх байгалийн тогтоц газар', province: 'Орхон', lat: 48.92, lng: 104.02 },
+
+  // ӨВӨРХАНГАЙ АЙМАГ
+  { id: 'ovorkh-1', name: 'Арц богд', province: 'Өвөрхангай', lat: 44.92, lng: 101.92 },
+  { id: 'ovorkh-2', name: 'Хужиртын рашаан', province: 'Өвөрхангай', lat: 46.92, lng: 102.82 },
+  { id: 'ovorkh-3', name: 'Монгол түмний морины их шүтээн', province: 'Өвөрхангай', lat: 46.52, lng: 102.52 },
+  { id: 'ovorkh-4', name: 'Хархорум хот', province: 'Өвөрхангай', lat: 47.20, lng: 102.83 },
+  { id: 'ovorkh-5', name: 'Эрдэнэ зуу хийд', province: 'Өвөрхангай', lat: 47.21, lng: 102.85 },
+  { id: 'ovorkh-6', name: 'Тэвш уул', province: 'Өвөрхангай', lat: 46.02, lng: 102.92 },
+  { id: 'ovorkh-7', name: 'Төвхөн хийд', province: 'Өвөрхангай', lat: 46.52, lng: 102.12 },
+
+  // ӨМНӨГОВЬ АЙМАГ
+  { id: 'omngov-1', name: 'Говь гурван сайхан', province: 'Өмнөговь', lat: 43.72, lng: 104.32 },
+  { id: 'omngov-2', name: 'Баянзаг', province: 'Өмнөговь', lat: 44.22, lng: 103.72 },
+  { id: 'omngov-3', name: 'Нэмэгт, Хэрмэн цав', province: 'Өмнөговь', lat: 43.42, lng: 102.02 },
+  { id: 'omngov-4', name: 'Галбын говь', province: 'Өмнөговь', lat: 44.02, lng: 106.82 },
+  { id: 'omngov-5', name: 'Ноён богд, Толь хад', province: 'Өмнөговь', lat: 43.32, lng: 103.02 },
+  { id: 'omngov-6', name: 'Алгуй улаан цав', province: 'Өмнөговь', lat: 43.52, lng: 103.52 },
+  { id: 'omngov-7', name: 'Хонгорын элс', province: 'Өмнөговь', lat: 43.82, lng: 104.02 },
+  { id: 'omngov-8', name: 'Сангийн далай', province: 'Өмнөговь', lat: 43.92, lng: 103.12 },
+  { id: 'omngov-9', name: 'Галбын гурван хийд', province: 'Өмнөговь', lat: 44.12, lng: 106.72 },
+  { id: 'omngov-10', name: 'Ёлын ам', province: 'Өмнөговь', lat: 43.68, lng: 104.22 },
+
+  // ХОВД АЙМАГ
+  { id: 'khovd-1', name: 'Сэнхэрийн агуй', province: 'Ховд', lat: 47.82, lng: 92.02 },
+  { id: 'khovd-2', name: 'Хар-Ус нуур', province: 'Ховд', lat: 47.72, lng: 92.12 },
+  { id: 'khovd-3', name: 'Мөнххайрхан уул', province: 'Ховд', lat: 46.82, lng: 91.32 },
+  { id: 'khovd-4', name: 'Баянзүрхийн буган хөшөө', province: 'Ховд', lat: 47.92, lng: 91.82 },
+  { id: 'khovd-5', name: 'Төрийн тахилгат Алтан Хөхий уул', province: 'Ховд', lat: 47.52, lng: 91.92 },
+  { id: 'khovd-6', name: 'Харуул овоо', province: 'Ховд', lat: 48.02, lng: 92.12 },
+  { id: 'khovd-7', name: 'Ямаан усны хадны сүг зураг', province: 'Ховд', lat: 47.62, lng: 91.52 },
+  { id: 'khovd-8', name: 'Цамбагарав уулын байгалийн цогцолборт газар', province: 'Ховд', lat: 47.32, lng: 90.92 },
+  { id: 'khovd-9', name: 'Ишгэн толгойн хадны зураг', province: 'Ховд', lat: 47.92, lng: 91.72 },
+
+  // УВС АЙМАГ
+  { id: 'uvs-1', name: 'Увс нуур', province: 'Увс', lat: 50.22, lng: 92.82 },
+  { id: 'uvs-2', name: 'Хяргас нуур, хэцүү хад', province: 'Увс', lat: 49.22, lng: 93.42 },
+  { id: 'uvs-3', name: 'Алтан элсний дархан цаазат газар', province: 'Увс', lat: 49.82, lng: 93.52 },
+  { id: 'uvs-4', name: 'Хан хөхий уулс', province: 'Увс', lat: 49.02, lng: 91.52 },
+  { id: 'uvs-5', name: 'Чандмань уулын дурсгал', province: 'Увс', lat: 49.42, lng: 92.72 },
+  { id: 'uvs-6', name: 'Гоожуурын хүрхрээ', province: 'Увс', lat: 49.82, lng: 92.02 },
+  { id: 'uvs-7', name: 'Мөнгөт цахир уул', province: 'Увс', lat: 50.12, lng: 91.22 },
+  { id: 'uvs-8', name: 'Дэглий цагаан уул', province: 'Увс', lat: 50.42, lng: 92.52 },
+  { id: 'uvs-9', name: 'Зураагийн улаан хадны зураг', province: 'Увс', lat: 49.72, lng: 93.22 },
+
+  // ХӨВСГӨЛ АЙМАГ
+  { id: 'khuvsgul-1', name: 'Соёны бүс нутаг', province: 'Хөвсгөл', lat: 51.02, lng: 99.82 },
+  { id: 'khuvsgul-2', name: 'Хөвсгөл нуур', province: 'Хөвсгөл', lat: 51.02, lng: 100.52 },
+  { id: 'khuvsgul-3', name: 'Даян дээрхийн агуй', province: 'Хөвсгөл', lat: 50.02, lng: 100.32 },
+  { id: 'khuvsgul-4', name: 'Уушгийн өврийн буган хөшөө', province: 'Хөвсгөл', lat: 49.82, lng: 100.02 },
+  { id: 'khuvsgul-5', name: 'Улаан толгойн буган хөшөө', province: 'Хөвсгөл', lat: 49.62, lng: 99.92 },
+  { id: 'khuvsgul-6', name: 'Дархадын 13 овоо', province: 'Хөвсгөл', lat: 51.32, lng: 99.02 },
+  { id: 'khuvsgul-7', name: 'Цаатны нутаг', province: 'Хөвсгөл', lat: 51.82, lng: 100.22 },
+
+  // СЭЛЭНГЭ АЙМАГ
+  { id: 'selenge-1', name: 'Амарбаясгалан хийд', province: 'Сэлэнгэ', lat: 49.52, lng: 105.22 },
+  { id: 'selenge-2', name: 'Соронзон хад', province: 'Сэлэнгэ', lat: 49.82, lng: 106.62 },
+  { id: 'selenge-3', name: 'Хувьсгалын өлгий Алтанбулаг', province: 'Сэлэнгэ', lat: 50.32, lng: 106.52 },
+  { id: 'selenge-4', name: 'Халуун рашаан', province: 'Сэлэнгэ', lat: 49.92, lng: 106.32 },
+  { id: 'selenge-5', name: 'Тужийн нарс', province: 'Сэлэнгэ', lat: 49.92, lng: 106.42 },
+  { id: 'selenge-6', name: 'Дуут хад', province: 'Сэлэнгэ', lat: 49.72, lng: 106.22 },
+  { id: 'selenge-7', name: 'Сайханы хөтөл', province: 'Сэлэнгэ', lat: 49.62, lng: 106.72 },
+
+  // СҮХБААТАР АЙМАГ
+  { id: 'sukhbaatar-1', name: 'Алтан овоо', province: 'Сүхбаатар', lat: 46.12, lng: 113.62 },
+  { id: 'sukhbaatar-2', name: 'Шилийн богд', province: 'Сүхбаатар', lat: 45.22, lng: 113.92 },
+  { id: 'sukhbaatar-3', name: 'Монголын хүн чулууд', province: 'Сүхбаатар', lat: 46.32, lng: 113.22 },
+  { id: 'sukhbaatar-4', name: 'Таван толгойн археологийн цогцолбор', province: 'Сүхбаатар', lat: 46.52, lng: 113.02 },
+  { id: 'sukhbaatar-5', name: 'Ганга нуур, Оргихын булаг', province: 'Сүхбаатар', lat: 46.02, lng: 114.22 },
+  { id: 'sukhbaatar-6', name: 'Хунгийн чуулган', province: 'Сүхбаатар', lat: 46.22, lng: 113.52 },
+  { id: 'sukhbaatar-7', name: 'Егүзэрийн хийд', province: 'Сүхбаатар', lat: 46.42, lng: 113.12 },
+
+  // ХЭНТИЙ АЙМАГ
+  { id: 'khentii-1', name: 'Бурхан Халдун уул', province: 'Хэнтий', lat: 48.72, lng: 109.02 },
+  { id: 'khentii-2', name: 'Балдан Бэрээвэн хийд', province: 'Хэнтий', lat: 47.82, lng: 110.62 },
+  { id: 'khentii-3', name: 'Чингисийн гэрэлт хөшөө', province: 'Хэнтий', lat: 47.72, lng: 110.72 },
+  { id: 'khentii-4', name: 'Дэлүүн болдог', province: 'Хэнтий', lat: 49.22, lng: 109.72 },
+  { id: 'khentii-5', name: 'Хар зүрхний хөх нуур', province: 'Хэнтий', lat: 48.12, lng: 111.02 },
+  { id: 'khentii-6', name: 'Хэрлэнгийн хөдөө арал', province: 'Хэнтий', lat: 48.32, lng: 109.82 },
+  { id: 'khentii-7', name: 'Өглөгчийн хэрэм', province: 'Хэнтий', lat: 47.62, lng: 110.42 },
+  { id: 'khentii-8', name: 'Рашаан хад', province: 'Хэнтий', lat: 47.52, lng: 110.12 },
+  { id: 'khentii-9', name: 'Дуурлиг нарсны Хүннүгийн булш', province: 'Хэнтий', lat: 47.42, lng: 110.52 },
+
+  // ТӨВ АЙМАГ
+  { id: 'tuv-1', name: 'Манзушир хийдийн туурь', province: 'Төв', lat: 47.72, lng: 107.02 },
+  { id: 'tuv-2', name: 'Хустайн байгалийн цогцолборт газар', province: 'Төв', lat: 47.72, lng: 105.92 },
+  { id: 'tuv-3', name: 'Гүнжийн сүм', province: 'Төв', lat: 47.52, lng: 106.32 },
+  { id: 'tuv-4', name: 'Зоргол хайрхан уул', province: 'Төв', lat: 47.32, lng: 106.02 },
+  { id: 'tuv-5', name: 'Чингис хааны морьт хөшөө', province: 'Төв', lat: 47.81, lng: 107.53 },
+  { id: 'tuv-6', name: 'Тоньюукукын гэрэлт хөшөөний бичээс, цогцолбор дурсгал', province: 'Төв', lat: 47.92, lng: 107.92 },
+  { id: 'tuv-7', name: 'Цогт хунтайжийн дуутын хадны бичээс', province: 'Төв', lat: 47.62, lng: 106.52 },
+]

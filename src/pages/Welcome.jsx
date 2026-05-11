@@ -1,10 +1,27 @@
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, User } from 'lucide-react'
 import { useLang } from '../context/LangContext'
+import { useAuth } from '../context/AuthContext'
+import { NomadLogoIcon } from '../components/NomadLogo'
 
 export default function Welcome() {
   const navigate = useNavigate()
   const { tr } = useLang()
+  const { loginWithGoogle } = useAuth()
+  const [loading, setLoading] = useState(false)
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true)
+      await loginWithGoogle()
+      navigate('/home')
+    } catch (err) {
+      console.error('Google login failed:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden bg-[#060A1A]">
@@ -20,10 +37,10 @@ export default function Welcome() {
 
       {/* Logo + Tagline */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center -mt-4">
-        <div className="flex items-center gap-2 mb-5">
-          <span className="text-4xl">✈️</span>
+        <div className="flex items-center gap-3 mb-5">
+          <NomadLogoIcon size={48} />
           <span className="text-white font-black text-2xl tracking-tight">
-            NOMAD<span className="text-blue-400">AI</span>
+            Nomad<span className="text-secondary">iq</span>
           </span>
         </div>
         <h1 className="text-white text-3xl font-black leading-tight whitespace-pre-line mb-4">
@@ -47,7 +64,7 @@ export default function Welcome() {
       {/* Action buttons */}
       <div className="relative z-10 px-5 pb-8 space-y-2.5">
         <button
-          onClick={() => navigate('/home')}
+          onClick={() => navigate('/login')}
           className="w-full flex items-center justify-center gap-2.5 bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-[0.97]"
         >
           <Mail size={17} />
@@ -55,8 +72,9 @@ export default function Welcome() {
         </button>
 
         <button
-          onClick={() => navigate('/home')}
-          className="w-full flex items-center justify-center gap-2.5 bg-white text-gray-800 font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.97]"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2.5 bg-white text-gray-800 font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
           {tr('btn_google')}
@@ -77,7 +95,7 @@ export default function Welcome() {
         </div>
 
         <button
-          onClick={() => navigate('/home')}
+          onClick={() => navigate('/login')}
           className="w-full flex items-center justify-center gap-2.5 border border-white/20 text-white/80 font-semibold py-3.5 rounded-2xl hover:bg-white/8 transition-all active:scale-[0.97] text-sm"
         >
           <User size={16} />
@@ -86,7 +104,7 @@ export default function Welcome() {
 
         <p className="text-center text-white/40 text-xs pt-0.5">
           {tr('no_account')}{' '}
-          <button onClick={() => navigate('/home')} className="text-primary font-bold">
+          <button onClick={() => navigate('/login')} className="text-primary font-bold">
             {tr('signup')}
           </button>
         </p>
@@ -94,3 +112,5 @@ export default function Welcome() {
     </div>
   )
 }
+
+

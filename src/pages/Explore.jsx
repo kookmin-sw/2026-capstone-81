@@ -1,149 +1,103 @@
-import { useState } from 'react'
-import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+﻿import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
+import { BookOpen, Sparkles, ScrollText, Map, Mountain, UtensilsCrossed, Wallet, MessageCircle } from 'lucide-react'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
-import DestinationCard from '../components/DestinationCard'
-import { locations } from '../data/locations'
-
-const regions = ['all', 'ub', 'gobi', 'terelj', 'khuvsgul', 'kharkhorin', 'orkhon', 'bayan']
-const catFilters = ['all', 'nature', 'culture', 'activity']
 
 export default function Explore() {
-  const { tr, lang } = useLang()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const [query, setQuery] = useState('')
-  const [region, setRegion] = useState('all')
-  const [cat, setCat] = useState(searchParams.get('cat') || 'all')
+  const { lang } = useLang()
 
-  const filtered = locations.filter(loc => {
-    const matchRegion = region === 'all' || loc.region === region
-    const matchCat = cat === 'all' || loc.category === cat
-    const matchQuery = !query || loc.name[lang].toLowerCase().includes(query.toLowerCase()) ||
-      loc.description[lang].toLowerCase().includes(query.toLowerCase())
-    return matchRegion && matchCat && matchQuery
-  })
-
-  const regionLabel = r => {
-    const map = {
-      all: tr('region_all'),
-      ub: tr('region_ub'),
-      gobi: tr('region_gobi'),
-      terelj: tr('region_terelj'),
-      khuvsgul: tr('region_khuvsgul'),
-      kharkhorin: tr('region_kharkhorin'),
-      orkhon: tr('region_orkhon'),
-      bayan: tr('region_bayan'),
-    }
-    return map[r] ?? r
-  }
-
-  const catLabel = c => {
-    const map = {
-      all: tr('cat_all'),
-      nature: tr('filter_nature'),
-      culture: tr('filter_culture'),
-      activity: tr('filter_activity'),
-      food: tr('filter_food'),
-    }
-    return map[c] ?? c
-  }
+  const categories = [
+    {
+      icon: Mountain,
+      color: 'bg-blue-50 text-blue-600',
+      label: lang === 'kr' ? '여행지 탐색' : lang === 'mn' ? 'Газрууд хайх' : 'Destinations',
+      desc: lang === 'kr' ? '몽골 전체 여행지 보기' : lang === 'mn' ? 'Монголын бүх газрууд' : 'Browse all Mongolia destinations',
+      path: '/explore',
+    },
+    {
+      icon: Map,
+      color: 'bg-emerald-50 text-emerald-600',
+      label: lang === 'kr' ? '지도' : lang === 'mn' ? 'Газрын зураг' : 'Map',
+      desc: lang === 'kr' ? '인터랙티브 지도 탐색' : lang === 'mn' ? 'Интерактив газрын зураг' : 'Interactive map view',
+      path: '/map',
+    },
+    {
+      icon: ScrollText,
+      color: 'bg-purple-50 text-purple-600',
+      label: lang === 'kr' ? '문화 가이드' : lang === 'mn' ? 'Соёлын гарын авлага' : 'Culture Guide',
+      desc: lang === 'kr' ? '몽골 문화 & 역사' : lang === 'mn' ? 'Монгол соёл & түүх' : 'Mongolia culture & history',
+      path: '/culture',
+    },
+    {
+      icon: UtensilsCrossed,
+      color: 'bg-orange-50 text-orange-600',
+      label: lang === 'kr' ? '맛집' : lang === 'mn' ? 'Рестораны' : 'Restaurants',
+      desc: lang === 'kr' ? '울란바토르 맛집 추천' : lang === 'mn' ? 'УБ-ын шилдэг рестораны' : 'Best restaurants in UB',
+      path: '/restaurants',
+    },
+    {
+      icon: Wallet,
+      color: 'bg-yellow-50 text-yellow-600',
+      label: lang === 'kr' ? '경비 계산' : lang === 'mn' ? 'Зардал тооцоо' : 'Budget',
+      desc: lang === 'kr' ? '여행 예산 계산기' : lang === 'mn' ? 'Аяллын зардал тооцоолол' : 'Travel cost estimator',
+      path: '/budget',
+    },
+    {
+      icon: BookOpen,
+      color: 'bg-primary-light text-secondary',
+      label: lang === 'kr' ? '블로그' : lang === 'mn' ? 'Блог' : 'Blog',
+      desc: lang === 'kr' ? '여행자들의 이야기' : lang === 'mn' ? 'Аялагчдын түүх' : 'Traveler stories',
+      path: '/blog',
+    },
+    {
+      icon: Sparkles,
+      color: 'bg-indigo-50 text-indigo-600',
+      label: lang === 'kr' ? 'AI 플래너' : lang === 'mn' ? 'AI Төлөвлөгч' : 'AI Planner',
+      desc: lang === 'kr' ? 'AI가 만드는 여행 일정' : lang === 'mn' ? 'AI аялалын хуваарь' : 'AI-powered itinerary',
+      path: '/planner',
+    },
+    {
+      icon: MessageCircle,
+      color: 'bg-teal-50 text-teal-600',
+      label: lang === 'kr' ? 'AI 채팅' : lang === 'mn' ? 'AI Чат' : 'AI Chat',
+      desc: lang === 'kr' ? 'AI와 여행 상담하기' : lang === 'mn' ? 'AI-тай аяллын зөвлөлгөө' : 'Chat with travel AI',
+      path: '/chat',
+    },
+  ]
 
   return (
-    <div className="flex flex-col h-full bg-[#F8F9FB]">
+    <div className="flex flex-col h-full bg-white">
       <Header />
       <div className="flex-1 overflow-y-auto pb-20">
-        {/* Search */}
-        <div className="bg-white px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2.5">
-            <Search size={15} className="text-gray-400 flex-shrink-0" />
-            <input
-              type="text"
-              placeholder={tr('search_placeholder')}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
-            />
-            {query && (
-              <button onClick={() => setQuery('')}>
-                <X size={14} className="text-gray-400" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Region chips */}
-        <div className="bg-white px-4 pt-3 pb-2">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {regions.map(r => (
-              <button
-                key={r}
-                onClick={() => setRegion(r)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-                  region === r
-                    ? 'bg-primary text-white shadow-sm shadow-primary/25'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {regionLabel(r)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Category chips */}
-        <div className="bg-white px-4 pb-3 border-b border-gray-100">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {catFilters.map(c => (
-              <button
-                key={c}
-                onClick={() => setCat(c)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-                  cat === c
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
-              >
-                {catLabel(c)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Count */}
-        <div className="px-4 py-3 flex items-center justify-between">
-          <p className="text-xs text-gray-500">
-            <span className="font-bold text-gray-800">{filtered.length}</span>
-            {lang === 'kr' ? '개의 여행지' : lang === 'en' ? ' destinations' : ' газар'}
+        <div className="px-5 pt-6 pb-2">
+          <h1 className="text-xl font-black text-gray-900 mb-1">
+            {lang === 'kr' ? '카테고리' : lang === 'mn' ? 'Ангилал' : 'Category'}
+          </h1>
+          <p className="text-sm text-gray-400">
+            {lang === 'kr' ? '원하는 정보를 선택하세요' : lang === 'mn' ? 'Хүссэн мэдээллээ сонгоно уу' : 'Choose what you want to explore'}
           </p>
-          {(region !== 'all' || cat !== 'all' || query) && (
-            <button
-              onClick={() => { setRegion('all'); setCat('all'); setQuery('') }}
-              className="text-xs text-primary font-semibold flex items-center gap-1"
-            >
-              <X size={12} />
-              {lang === 'kr' ? '초기화' : lang === 'en' ? 'Reset' : 'Арилгах'}
-            </button>
-          )}
         </div>
 
-        {/* Results */}
-        <div className="px-4 space-y-3 pb-4">
-          {filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-4xl mb-3">🔍</p>
-              <p className="text-gray-500 text-sm font-medium">{tr('no_results')}</p>
-            </div>
-          ) : (
-            filtered.map(loc => (
-              <DestinationCard key={loc.id} location={loc} size="lg" />
-            ))
-          )}
+        <div className="px-5 pt-3 space-y-3">
+          {categories.map(({ icon: Icon, color, label, desc, path }) => (
+            <button key={label} onClick={() => navigate(path)}
+              className="w-full flex items-center gap-4 bg-gray-50 hover:bg-gray-100 rounded-2xl p-4 transition-all active:scale-[0.99] text-left">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+                <Icon size={22} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-gray-900">{label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+              </div>
+              <span className="text-gray-300 text-lg">&rsaquo;</span>
+            </button>
+          ))}
         </div>
       </div>
       <BottomNav />
     </div>
   )
 }
+

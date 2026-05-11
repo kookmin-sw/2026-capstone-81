@@ -1,150 +1,216 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
+import { useAuth } from '../../context/AuthContext'
 import { blogs } from '../../data/blogs'
-import { Search, Heart, Clock, X, BookOpen } from 'lucide-react'
+import { db } from '../../firebase'
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
+import { Search, Heart, Clock, Plus, User as UserIcon, BookOpen } from 'lucide-react'
 
 export default function DesktopBlog() {
   const navigate = useNavigate()
-  const { lang, tr } = useLang()
+  const { lang } = useLang()
+  const { user } = useAuth()
   const [search, setSearch] = useState('')
+  const [tab, setTab] = useState('all') // 'all' | 'mine'
+  const [userPosts, setUserPosts] = useState([])
 
-  const filtered = blogs.filter(b =>
-    !search ||
-    b.title[lang].toLowerCase().includes(search.toLowerCase()) ||
-    b.excerpt[lang].toLowerCase().includes(search.toLowerCase())
-  )
+  useEffect(() => {
+    if (!db) return
+    const q = query(collection(db, 'blogs'), orderBy('createdAt', 'desc'))
+    const unsub = onSnapshot(q, snap => {
+      setUserPosts(snap.docs.map(doc => ({ id: doc.id, _type: 'user', ...doc.data() })))
+    }, err => console.error(err))
+    return () => unsub()
+  }, [])
 
-  const featured = filtered[0]
-  const rest = filtered.slice(1)
+  const L = {
+    kr: { title: '블로그', sub: '여행자들의 생생한 몽골 여행 이야기를 공유해보세요', all: '전체 글', mine: '내가 쓴 글', write: '+ 글쓰기', search: '블로그 검색...', empty: '글이 없습니다', login_write: '로그인 후 글을 쓸 수 있어요', read: '읽기' },
+    en: { title: 'Blog', sub: 'Share your real Mongolia travel stories with fellow travelers', all: 'All Posts', mine: 'My Posts', write: '+ Write', search: 'Search blog...', empty: 'No posts found', login_write: 'Log in to write a post', read: 'Read' },
+    mn: { title: 'Блог', sub: 'Монгол аяллын шинэлэг түүхээ хуваалцаарай', all: 'Бүх нийтлэл', mine: 'Миний нийтлэл', write: '+ Бичих', search: 'Блог хайх...', empty: 'Нийтлэл байхгүй', login_write: 'Бичихийн тулд нэвтэрнэ үү', read: 'Унших' },
+  }
+  const l = L[lang] || L.en
+
+  // All posts combined: static blogs + user posts from Firestore
+  const allPosts = [
+    ...blogs.map(b => ({ ...b, _type: 'static' })),
+    ...userPosts,
+  ]
+
+  const myPosts = tab === 'mine'
+    ? userPosts.filter(p => p.authorId === user?.uid)
+    : null
+
+  const sourceList = tab === 'mine' ? (myPosts || []) : allPosts
+
+  const filtered = sourceList.filter(p => {
+    if (!search) return true
+    const title = p._type === 'static' ? (p.title[lang] || '') : (p.title || '')
+    const excerpt = p._type === 'static' ? (p.excerpt?.[lang] || '') : (p.content || '')
+    const q = search.toLowerCase()
+    return title.toLowerCase().includes(q) || excerpt.toLowerCase().includes(q)
+  })
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-4">
-            <BookOpen size={24} className="text-primary" />
-            <h1 className="text-3xl font-black text-gray-900">{tr('blog_title')}</h1>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <BookOpen size={22} className="text-primary" />
+            <h1 className="text-2xl font-black text-gray-900">{l.title}</h1>
           </div>
-          <p className="text-gray-500 mb-5">여행자들의 생생한 몽골 여행 이야기를 만나보세요</p>
-          <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-4 py-3 max-w-md">
-            <Search size={16} className="text-gray-400 flex-shrink-0" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={tr('blog_search')}
-              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
-            />
-            {search && (
-              <button onClick={() => setSearch('')}>
-                <X size={14} className="text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
-          </div>
+          <p className="text-sm text-primary font-medium">{l.sub}</p>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-5xl mb-4">📝</div>
-            <p className="text-gray-500 text-lg">검색 결과가 없습니다</p>
+        {/* Tabs + Write button */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setTab('all')}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                tab === 'all'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              {l.all}
+            </button>
+            <button
+              onClick={() => setTab('mine')}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                tab === 'mine'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              {l.mine}
+            </button>
           </div>
-        ) : (
-          <>
-            {/* Featured article */}
-            {featured && (
-              <div
-                onClick={() => navigate(`/blog/${featured.id}`)}
-                className="cursor-pointer group mb-10"
-              >
-                <div className="relative rounded-3xl overflow-hidden h-80">
-                  <img
-                    src={featured.image}
-                    alt={featured.title[lang]}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/20" />
-                  <div className="absolute inset-0 p-8 flex flex-col justify-end">
-                    <span className="inline-block bg-primary text-white text-xs font-bold px-3 py-1 rounded-full mb-3 w-fit">
-                      {featured.category[lang]}
-                    </span>
-                    <h2 className="text-3xl font-black text-white mb-2 max-w-xl leading-tight">
-                      {featured.title[lang]}
-                    </h2>
-                    <p className="text-white/70 text-sm line-clamp-2 max-w-lg mb-4">
-                      {featured.excerpt[lang]}
-                    </p>
-                    <div className="flex items-center gap-4 text-white/60 text-xs">
-                      <span className="font-semibold text-white/80">{featured.author}</span>
-                      <div className="flex items-center gap-1">
-                        <Clock size={12} />
-                        <span>{featured.readTime[lang]}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart size={12} />
-                        <span>{featured.likes}</span>
-                      </div>
-                      <span>{featured.date}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* Rest in grid */}
-            {rest.length > 0 && (
-              <>
-                <h2 className="text-xl font-black text-gray-900 mb-5">더 많은 이야기</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {rest.map(blog => (
-                    <div
-                      key={blog.id}
-                      onClick={() => navigate(`/blog/${blog.id}`)}
-                      className="cursor-pointer group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                    >
-                      <div className="relative h-44 overflow-hidden">
-                        <img
-                          src={blog.image}
-                          alt={blog.title[lang]}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                        <span className="absolute top-3 left-3 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                          {blog.category[lang]}
-                        </span>
-                      </div>
-                      <div className="p-5">
-                        <h3 className="font-black text-gray-900 text-base leading-snug mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                          {blog.title[lang]}
-                        </h3>
-                        <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed mb-4">
-                          {blog.excerpt[lang]}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <div className="flex items-center gap-3">
-                            <span className="font-semibold text-gray-600">{blog.author}</span>
-                            <div className="flex items-center gap-1">
-                              <Clock size={11} />
-                              <span>{blog.readTime[lang]}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Heart size={11} className="text-red-400" />
-                            <span>{blog.likes}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+          {user ? (
+            <button
+              onClick={() => navigate('/write')}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
+            >
+              <Plus size={15} />
+              {lang === 'kr' ? '글쓰기' : lang === 'mn' ? 'Бичих' : 'Write'}
+            </button>
+          ) : null}
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 mb-8 shadow-sm">
+          <Search size={16} className="text-gray-400 flex-shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={l.search}
+            className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+          />
+        </div>
+
+        {/* Blog cards */}
+        {tab === 'mine' && !user ? (
+          <div className="text-center py-20 text-gray-400 text-sm">{l.login_write}</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-gray-400 text-sm">{l.empty}</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(post =>
+              post._type === 'static'
+                ? <StaticCard key={post.id} blog={post} lang={lang} navigate={navigate} label={l.read} />
+                : <UserCard key={post.id} post={post} navigate={navigate} label={l.read} />
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
+  )
+}
+
+function StaticCard({ blog, lang, navigate, label }) {
+  return (
+    <article
+      onClick={() => navigate(`/blog/${blog.id}`)}
+      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+    >
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={blog.image}
+          alt={blog.title[lang]}
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
+        <span className="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
+          {blog.category[lang]}
+        </span>
+        <span className="absolute top-3 right-3 flex items-center gap-1 text-white text-[10px] bg-black/35 backdrop-blur-sm px-2 py-1 rounded-full">
+          <Clock size={9} />
+          {blog.readTime[lang]}
+        </span>
+      </div>
+      <div className="p-4">
+        <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-1.5">{blog.title[lang]}</h3>
+        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-3">{blog.excerpt[lang]}</p>
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <span className="font-semibold text-gray-600">{blog.author}</span>
+            <span>·</span>
+            <span>{blog.date}</span>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <span className="flex items-center gap-1">
+              <Heart size={10} className="fill-red-400 text-red-400" />
+              {blog.likes}
+            </span>
+            <span className="text-primary font-bold">{label} →</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function UserCard({ post, navigate, label }) {
+  return (
+    <article
+      onClick={() => navigate(`/post/${post.id}`)}
+      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+    >
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={post.imageUrl || 'https://images.unsplash.com/photo-1547448161-c56e75b54317?auto=format&fit=crop&w=600&q=80'}
+          alt={post.title}
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
+        <span className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
+          {post.category}
+        </span>
+        <span className="absolute top-3 right-3 flex items-center gap-1 text-white text-[10px] bg-black/35 backdrop-blur-sm px-2 py-1 rounded-full">
+          <UserIcon size={9} />
+          {post.authorName}
+        </span>
+      </div>
+      <div className="p-4">
+        <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-1.5">{post.title}</h3>
+        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-3">{post.content}</p>
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <span className="text-xs text-gray-400">
+            {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString() : ''}
+          </span>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <span className="flex items-center gap-1">
+              <Heart size={10} className="fill-red-400 text-red-400" />
+              {post.likes || 0}
+            </span>
+            <span className="text-primary font-bold">{label} →</span>
+          </div>
+        </div>
+      </div>
+    </article>
   )
 }

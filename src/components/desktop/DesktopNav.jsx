@@ -1,6 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
-import { Compass, Sparkles } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { Sparkles, User } from 'lucide-react'
+import { NomadLogoIcon, NomadLogoText } from '../NomadLogo'
 
 const LANGS = [
   { code: 'kr', label: 'KR' },
@@ -12,14 +14,13 @@ export default function DesktopNav() {
   const navigate = useNavigate()
   const location = useLocation()
   const { lang, setLang, tr } = useLang()
+  const { user } = useAuth()
 
   const navLinks = [
-    { path: '/home', label: tr('nav_home') },
-    { path: '/explore', label: tr('nav_explore') },
-    { path: '/restaurants', label: lang === 'kr' ? '맛집' : lang === 'en' ? 'Restaurants' : 'Рестораны' },
-    { path: '/blog', label: tr('nav_blog') },
-    { path: '/culture', label: lang === 'kr' ? '문화 가이드' : lang === 'en' ? 'Culture' : 'Соёл' },
-    { path: '/budget', label: lang === 'kr' ? '경비 계산' : lang === 'en' ? 'Budget' : 'Зардал' },
+    { path: '/explore', label: lang === 'kr' ? '카테고리' : lang === 'mn' ? 'Ангилал' : 'Category' },
+    { path: '/map', label: lang === 'kr' ? '지도' : lang === 'mn' ? 'Газрын зураг' : 'Map' },
+    { path: '/home', label: lang === 'kr' ? '홈' : lang === 'mn' ? 'Нүүр' : 'Home' },
+    { path: '/blog', label: lang === 'kr' ? '블로그' : lang === 'mn' ? 'Блог' : 'Blog' },
   ]
 
   const isActive = (path) => location.pathname === path
@@ -29,12 +30,8 @@ export default function DesktopNav() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <button onClick={() => navigate('/home')} className="flex items-center gap-2.5 group flex-shrink-0">
-          <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-md shadow-primary/25">
-            <Compass size={18} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-xl font-black tracking-tight text-gray-900">
-            NOMAD<span className="text-primary">AI</span>
-          </span>
+          <NomadLogoIcon size={38} />
+          <NomadLogoText className="text-xl" />
         </button>
 
         {/* Nav links */}
@@ -84,6 +81,37 @@ export default function DesktopNav() {
             <Sparkles size={14} />
             {lang === 'kr' ? 'AI 플래너' : lang === 'en' ? 'AI Planner' : 'AI Төлөвлөгч'}
           </button>
+
+          {/* Profile / Login */}
+          {user ? (
+            <button
+              onClick={() => navigate('/profile')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                isActive('/profile')
+                  ? 'text-primary bg-primary/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full object-cover" />
+              ) : (
+                <User size={16} />
+              )}
+              {lang === 'kr' ? '마이페이지' : lang === 'mn' ? 'Миний хуудас' : 'My Page'}
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/login')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                isActive('/login')
+                  ? 'text-primary bg-primary/5'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <User size={16} />
+              {tr('btn_login')}
+            </button>
+          )}
         </div>
       </div>
     </nav>

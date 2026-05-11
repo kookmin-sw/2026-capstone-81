@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Search, Star, MapPin, Clock, UtensilsCrossed } from 'lucide-react'
 import { useLang } from '../../context/LangContext'
 import { restaurants } from '../../data/restaurants'
@@ -12,7 +12,7 @@ const FILTERS = [
 
 const priceColor = {
   '$': 'text-emerald-600 bg-emerald-50 border-emerald-200',
-  '$$': 'text-blue-600 bg-blue-50 border-blue-200',
+  '$$': 'text-secondary bg-primary-light border-primary/30',
   '$$$': 'text-purple-600 bg-purple-50 border-purple-200',
 }
 
@@ -144,3 +144,6 @@ export default function DesktopRestaurants() {
     </div>
   )
 }
+
+
+

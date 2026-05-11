@@ -1,5 +1,6 @@
 import { Bell, Menu } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { NomadLogoIcon, NomadLogoText } from './NomadLogo'
 
 export default function Header() {
   const navigate = useNavigate()
@@ -11,10 +12,8 @@ export default function Header() {
       </button>
 
       <button onClick={() => navigate('/home')} className="flex items-center gap-1.5">
-        <span className="text-lg">✈️</span>
-        <span className="font-black text-gray-900 text-base tracking-tight">
-          NOMAD<span className="text-primary">AI</span>
-        </span>
+        <NomadLogoIcon size={32} />
+        <NomadLogoText className="text-base" />
       </button>
 
       <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors relative">
