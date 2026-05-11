@@ -23,6 +23,15 @@ import DesktopBudget from './pages/desktop/DesktopBudget'
 import DesktopRestaurants from './pages/desktop/DesktopRestaurants'
 import DesktopSaved from './pages/desktop/DesktopSaved'
 
+// Mobile pages
+import MobileHome from './pages/mobile/MobileHome'
+import MobileExplore from './pages/mobile/MobileExplore'
+import MobilePlanner from './pages/mobile/MobilePlanner'
+import MobileMap from './pages/mobile/MobileMap'
+import MobileProfile from './pages/mobile/MobileProfile'
+
+const isMobile = () => window.innerWidth < 768
+
 function DesktopApp() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -31,7 +40,6 @@ function DesktopApp() {
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/login" element={<Login />} />
-        {/* 공개 페이지 */}
         <Route path="/home" element={<DesktopHome />} />
         <Route path="/explore" element={<DesktopExplore />} />
         <Route path="/explore/:id" element={<DesktopDetail />} />
@@ -40,7 +48,6 @@ function DesktopApp() {
         <Route path="/budget" element={<DesktopBudget />} />
         <Route path="/restaurants" element={<DesktopRestaurants />} />
         <Route path="/blog" element={<DesktopBlog />} />
-        {/* 로그인 필요 */}
         <Route path="/planner" element={<ProtectedRoute><DesktopPlanner /></ProtectedRoute>} />
         <Route path="/blog/:id" element={<ProtectedRoute><DesktopBlogDetail /></ProtectedRoute>} />
         <Route path="/post/:id" element={<UserBlogDetail />} />
@@ -54,11 +61,28 @@ function DesktopApp() {
   )
 }
 
+function MobileApp() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/home" element={<MobileHome />} />
+      <Route path="/explore" element={<MobileExplore />} />
+      <Route path="/explore/:id" element={<MobileExplore />} />
+      <Route path="/planner" element={<MobilePlanner />} />
+      <Route path="/map" element={<MobileMap />} />
+      <Route path="/profile" element={<MobileProfile />} />
+      <Route path="/saved" element={<MobileProfile />} />
+      <Route path="*" element={<Navigate to="/home" replace />} />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
     <LangProvider>
       <AuthProvider>
-        <DesktopApp />
+        {isMobile() ? <MobileApp /> : <DesktopApp />}
       </AuthProvider>
     </LangProvider>
   )
