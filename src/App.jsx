@@ -35,6 +35,7 @@ import { BlogList, BlogDetail } from './pages/Blog'
 import Culture from './pages/Culture'
 import Budget from './pages/Budget'
 import Restaurants from './pages/Restaurants'
+import ExploreDetail from './pages/ExploreDetail'
 
 const isMobile = () => window.innerWidth < 768
 
@@ -74,7 +75,7 @@ function MobileApp() {
       <Route path="/login" element={<Login />} />
       <Route path="/home" element={<MobileHome />} />
       <Route path="/explore" element={<MobileExplore />} />
-      <Route path="/explore/:id" element={<MobileExplore />} />
+      <Route path="/explore/:id" element={<ExploreDetail />} />
       <Route path="/planner" element={<ProtectedRoute><MobilePlanner /></ProtectedRoute>} />
       <Route path="/map" element={<MobileMap />} />
       <Route path="/profile" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />

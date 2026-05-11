@@ -24,14 +24,15 @@ export default function WriteBlog() {
   const [imageFile, setImageFile] = useState(null)
   const [preview, setPreview] = useState('')
   const [loading, setLoading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState('')
   const [error, setError] = useState('')
 
   const cats = CATS[lang] || CATS.en
   const t = {
-    kr: { titlePh: '제목', contentPh: '여행 이야기를 작성하세요...', photo: '사진 추가', submit: '게시하기', pub: '게시 중...' },
-    en: { titlePh: 'Title', contentPh: 'Write your travel story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...' },
-    mn: { titlePh: 'Гарчиг', contentPh: 'Аяллын түүхээ бичнэ үү...', photo: 'Зураг нэмэх', submit: 'Нийтлэх', pub: 'Нийтэлж байна...' },
-  }[lang] || { titlePh: 'Title', contentPh: 'Write your story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...' }
+    kr: { titlePh: '제목', contentPh: '여행 이야기를 작성하세요...', photo: '사진 추가', submit: '게시하기', pub: '게시 중...', uploading: '사진 업로드 중...', saving: '저장 중...' },
+    en: { titlePh: 'Title', contentPh: 'Write your travel story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...', uploading: 'Uploading photo...', saving: 'Saving...' },
+    mn: { titlePh: 'Гарчиг', contentPh: 'Аяллын түүхээ бичнэ үү...', photo: 'Зураг нэмэх', submit: 'Нийтлэх', pub: 'Нийтэлж байна...', uploading: 'Зураг байршуулж байна...', saving: 'Хадгалж байна...' },
+  }[lang] || { titlePh: 'Title', contentPh: 'Write your story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...', uploading: 'Uploading...', saving: 'Saving...' }
 
   const handleImage = (e) => {
     const f = e.target.files?.[0]
@@ -49,14 +50,15 @@ export default function WriteBlog() {
       let imageUrl = 'https://images.unsplash.com/photo-1547448161-c56e75b54317?auto=format&fit=crop&w=600&q=80'
       if (imageFile && storage) {
         try {
+          setUploadStatus(t.uploading)
           const sRef = ref(storage, `blog-images/${Date.now()}_${imageFile.name}`)
-          const uploadDone = uploadBytes(sRef, imageFile).then(() => getDownloadURL(sRef))
-          const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
-          imageUrl = await Promise.race([uploadDone, timeout])
+          await uploadBytes(sRef, imageFile)
+          imageUrl = await getDownloadURL(sRef)
         } catch {
-          // Storage unavailable or timed out — post with default image
+          // Storage unavailable — post with default image
         }
       }
+      setUploadStatus(t.saving)
       await addDoc(collection(db, 'blogs'), {
         title: title.trim(), content: content.trim(), category: cats[catIdx],
         imageUrl, authorName: user.displayName || 'Traveler',
@@ -67,7 +69,7 @@ export default function WriteBlog() {
     } catch (err) {
       console.error(err)
       setError(lang === 'kr' ? '게시 실패' : 'Failed to publish')
-    } finally { setLoading(false) }
+    } finally { setLoading(false); setUploadStatus('') }
   }
 
   return (
@@ -81,7 +83,7 @@ export default function WriteBlog() {
           <button onClick={handleSubmit} disabled={loading || !title.trim() || !content.trim()}
             className="flex items-center gap-1.5 px-5 py-2 bg-primary text-white text-sm font-semibold rounded-full hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-all">
             <Send size={14} />
-            {loading ? t.pub : t.submit}
+            {loading ? (uploadStatus || t.pub) : t.submit}
           </button>
         </div>
       </div>

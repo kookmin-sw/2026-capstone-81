@@ -34,11 +34,12 @@ export default function MobileMap() {
         </div>
 
         {/* 지도 */}
-        <div className="flex-1 mx-4 rounded-2xl overflow-hidden shadow-sm border border-gray-100" style={{ height: '400px' }}>
+        <div className="flex-1 mx-4 rounded-2xl overflow-hidden shadow-sm border border-gray-100" style={{ minHeight: 'calc(100vh - 280px)' }}>
           <MapContainer
             center={[46.8625, 103.8467]}
             zoom={5}
             style={{ height: '100%', width: '100%' }}
+            zoomControl={false}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
