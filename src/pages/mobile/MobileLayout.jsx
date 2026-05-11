@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
-import { Home, Search, Map, Sparkles, BookOpen, MessageCircle, User } from 'lucide-react'
+import { Home, Search, Map, BookOpen, User, MessageCircle, Sparkles } from 'lucide-react'
 
 export default function MobileLayout({ children }) {
   const navigate = useNavigate()
@@ -11,7 +11,6 @@ export default function MobileLayout({ children }) {
     { icon: Home, label: { kr: '홈', en: 'Home', mn: 'Нүүр' }, path: '/home' },
     { icon: Search, label: { kr: '검색', en: 'Search', mn: 'Хайх' }, path: '/explore' },
     { icon: BookOpen, label: { kr: '블로그', en: 'Blog', mn: 'Блог' }, path: '/blog' },
-    { icon: MessageCircle, label: { kr: 'AI챗', en: 'AI Chat', mn: 'AI чат' }, path: '/chat' },
     { icon: Map, label: { kr: '지도', en: 'Map', mn: 'Газар' }, path: '/map' },
     { icon: User, label: { kr: '내 계정', en: 'My', mn: 'Миний' }, path: '/profile' },
   ]
@@ -21,6 +20,17 @@ export default function MobileLayout({ children }) {
       <div className="flex-1 pb-20">
         {children}
       </div>
+
+      {/* 플로팅 챗봇 버튼 */}
+      <button
+        onClick={() => navigate('/chat')}
+        className="fixed bottom-24 right-4 z-[60] w-14 h-14 bg-gradient-to-br from-primary to-purple-600 rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <MessageCircle size={22} className="text-white" />
+        <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+          <Sparkles size={9} className="text-yellow-900" />
+        </span>
+      </button>
 
       {/* 하단 탭바 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
