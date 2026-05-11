@@ -1,52 +1,70 @@
-﻿// Shared logo SVG component — Mongolian ger with sunrise
-export function NomadLogoIcon({ size = 40 }) {
+﻿export function NomadLogoIcon({ size = 40 }) {
+  const SX = 60, SY = 42, SR = 21;
   return (
-    <svg width={size} height={size} viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Sun — large half circle behind ger */}
-      <circle cx="30" cy="28" r="14" fill="#e5b829"/>
-      {/* Sun rays */}
-      <g stroke="#e5b829" strokeWidth="2" strokeLinecap="round">
-        <line x1="30" y1="8" x2="30" y2="12"/>
-        <line x1="20" y1="10" x2="22" y2="13"/>
-        <line x1="40" y1="10" x2="38" y2="13"/>
-        <line x1="13" y1="16" x2="16" y2="18"/>
-        <line x1="47" y1="16" x2="44" y2="18"/>
-        <line x1="10" y1="24" x2="13" y2="24"/>
-        <line x1="50" y1="24" x2="47" y2="24"/>
-        <line x1="12" y1="32" x2="15" y2="31"/>
-        <line x1="48" y1="32" x2="45" y2="31"/>
-      </g>
-      {/* Clouds */}
-      <g fill="none" stroke="#e5b829" strokeWidth="1.5" strokeLinecap="round">
-        <path d="M6 30 Q8 29 10 30 Q12 29 14 30"/>
-        <path d="M46 30 Q48 29 50 30 Q52 29 54 30"/>
-      </g>
-      {/* Ger body — cream colored dome */}
-      <path d="M15 48 Q18 36 30 30 Q42 36 45 48 Z" fill="#f5f0dc" stroke="#1a6b3c" strokeWidth="1.5"/>
-      {/* Ger base band */}
-      <rect x="16" y="44" width="28" height="5" rx="1" fill="#f5f0dc" stroke="#1a6b3c" strokeWidth="1"/>
-      {/* Roof ribs */}
-      <line x1="30" y1="30" x2="20" y2="42" stroke="#1a6b3c" strokeWidth="0.8"/>
-      <line x1="30" y1="30" x2="40" y2="42" stroke="#1a6b3c" strokeWidth="0.8"/>
-      <line x1="30" y1="30" x2="30" y2="44" stroke="#1a6b3c" strokeWidth="0.8"/>
-      {/* Crown/toono */}
-      <circle cx="30" cy="30" r="2.5" fill="#f5f0dc" stroke="#1a6b3c" strokeWidth="1"/>
-      {/* Door with pattern */}
-      <rect x="25" y="40" width="10" height="9" rx="1.5" fill="#1a6b3c"/>
-      <rect x="27" y="42" width="6" height="5" rx="1" fill="none" stroke="#f5f0dc" strokeWidth="0.8"/>
-      <line x1="30" y1="42" x2="30" y2="47" stroke="#f5f0dc" strokeWidth="0.6"/>
-      <line x1="27" y1="44.5" x2="33" y2="44.5" stroke="#f5f0dc" strokeWidth="0.6"/>
-      {/* Grass tufts */}
-      <g stroke="#7cb342" strokeWidth="1.5" strokeLinecap="round" fill="none">
-        <path d="M8 50 Q9 47 10 50"/>
-        <path d="M10 50 Q11 46 12 50"/>
-        <path d="M48 50 Q49 47 50 50"/>
-        <path d="M50 50 Q51 46 52 50"/>
-      </g>
-      {/* Ground curve */}
-      <path d="M4 52 Q30 48 56 52" stroke="#f5f0dc" strokeWidth="1.2" fill="none"/>
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Sun rays — 12 chunky pill shapes */}
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = i * 30;
+        const r = (a - 90) * Math.PI / 180;
+        const d = 26;
+        return (
+          <rect key={i} x="-3.5" y="-7" width="7" height="14" rx="3.5" fill="#F6BC1A"
+            transform={`translate(${SX + d * Math.cos(r)},${SY + d * Math.sin(r)}) rotate(${a})`}/>
+        );
+      })}
+
+      {/* Sun */}
+      <circle cx={SX} cy={SY} r={SR} fill="#F6BC1A"/>
+
+      {/* Wind curls — left */}
+      <path d="M22 63 C15 56 12 65 19 71" stroke="#F6BC1A" strokeWidth="5"   strokeLinecap="round" fill="none"/>
+      <path d="M17 75 C10 68  7 77 14 83" stroke="#F6BC1A" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+      {/* Wind curls — right */}
+      <path d="M98 63 C105 56 108 65 101 71"  stroke="#F6BC1A" strokeWidth="5"   strokeLinecap="round" fill="none"/>
+      <path d="M103 75 C110 68 113 77 106 83" stroke="#F6BC1A" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+
+      {/* ── GER (round yurt style) ── */}
+
+      {/* Dome fill — wide, flat dome */}
+      <path d="M 18 78 C 18 48 102 48 102 78 Z" fill="#F0EEE8"/>
+
+      {/* Dome outline */}
+      <path d="M 18 78 C 18 48 102 48 102 78"
+        fill="none" stroke="#1A4D2E" strokeWidth="3.5" strokeLinecap="round"/>
+
+      {/* Toono ring at dome apex */}
+      <ellipse cx="60" cy="56" rx="11" ry="4.5" fill="#F0EEE8" stroke="#1A4D2E" strokeWidth="2.5"/>
+      {/* Toono cross */}
+      <line x1="60" y1="51.5" x2="60" y2="60.5" stroke="#1A4D2E" strokeWidth="2"/>
+      <line x1="49" y1="56"   x2="71" y2="56"   stroke="#1A4D2E" strokeWidth="2"/>
+      {/* Chimney pole */}
+      <rect x="58.5" y="42" width="3" height="16" rx="1.5" fill="#8A8A8A" stroke="#666" strokeWidth="0.5"/>
+
+      {/* Cylindrical wall */}
+      <rect x="18" y="77" width="84" height="22" rx="1" fill="#F0EEE8" stroke="#1A4D2E" strokeWidth="3.5"/>
+
+      {/* Wall horizontal bands */}
+      <line x1="19" y1="83" x2="101" y2="83" stroke="#1A4D2E" strokeWidth="1.5"/>
+      <line x1="19" y1="89" x2="101" y2="89" stroke="#1A4D2E" strokeWidth="1.5"/>
+      <line x1="19" y1="94" x2="101" y2="94" stroke="#1A4D2E" strokeWidth="1.5"/>
+
+      {/* Door — orange, centered */}
+      <rect x="47" y="77" width="26" height="23" rx="2" fill="#E8851C"/>
+      <rect x="49.5" y="79.5" width="21" height="18" rx="1.5" fill="none" stroke="#F5A94A" strokeWidth="1.8"/>
+      <line x1="60"   y1="79.5" x2="60"   y2="97.5" stroke="#F5A94A" strokeWidth="1.8"/>
+      <line x1="49.5" y1="88"   x2="70.5" y2="88"   stroke="#F5A94A" strokeWidth="1.8"/>
+
+      {/* Left bush */}
+      <circle cx="11" cy="100" r="8"   fill="#4CAF50"/>
+      <circle cx="18" cy="97"  r="7"   fill="#388E3C"/>
+      <circle cx="6"  cy="97"  r="5.5" fill="#43A047"/>
+
+      {/* Right bush */}
+      <circle cx="109" cy="100" r="8"   fill="#4CAF50"/>
+      <circle cx="102" cy="97"  r="7"   fill="#388E3C"/>
+      <circle cx="114" cy="97"  r="5.5" fill="#43A047"/>
     </svg>
-  )
+  );
 }
 
 export function NomadLogoText({ className = '' }) {
