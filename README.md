@@ -1,9 +1,10 @@
 <div align="center">
 
-## AI 기반 몽골 여행 가이드 플랫폼
-<div align="center">
-
 <img src="./public/images/logoimage.svg" alt="Nomadiq Logo" width="120" />
+
+<div align="center">
+  
+## AI 기반 몽골 여행 가이드 플랫폼
 
 **국민대학교 2026 캡스톤 디자인 | 팀 81**
 
