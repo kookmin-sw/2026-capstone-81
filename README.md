@@ -1,10 +1,6 @@
 <div align="center">
 
-
-
 ## AI 기반 몽골 여행 가이드 플랫폼
-
-C:\Users\Nomin\2026-capstone-81\db-pic\ui.png
 
 **국민대학교 2026 캡스톤 디자인 | 팀 81**
 
