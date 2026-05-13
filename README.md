@@ -1,6 +1,9 @@
 <div align="center">
+<img width="633" height="477" alt="logo" src="https://github.com/user-attachments/assets/b759591a-3a37-4c6c-87ca-9d5f6236b4e8" />
 
-# 🌏 Nomadiq
+
+# <img width="1919" height="919" alt="Screenshot 2026-05-13 194023" src="https://github.com/user-attachments/assets/62113847-2bfd-41b3-aa13-76a74020a31a" />
+
 
 ## AI 기반 몽골 여행 가이드 플랫폼
 
