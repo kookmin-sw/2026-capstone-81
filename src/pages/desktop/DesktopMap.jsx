@@ -260,55 +260,99 @@ export default function DesktopMap() {
 
         {/* Location list */}
         <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
+          {filtered.length === 0 && filteredProvinceLocations.length === 0 ? (
             <div className="text-center py-10 px-5">
               <p className="text-gray-400 text-sm">검색 결과가 없습니다</p>
             </div>
-          ) : filtered.map(loc => {
-            const sel = isSelected(loc.id)
-            return (
-              <div
-                key={loc.id}
-                onClick={() => toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null })}
-                className={`group flex gap-3 p-4 cursor-pointer border-b border-gray-50 transition-all ${
-                  sel ? 'bg-primary/5 border-l-2 border-l-primary' : 'hover:bg-gray-50'
-                }`}
-              >
-                <div className="relative flex-shrink-0">
-                  <img src={loc.image} alt={loc.name[lang]} className="w-16 h-16 rounded-xl object-cover" />
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-xs"
-                    style={{ backgroundColor: categoryColors[loc.category] || '#3B6FF0' }}>
-                    {sel
-                      ? <CheckCircle2 size={12} className="text-white" />
-                      : <span>{categoryEmoji[loc.category] || '📍'}</span>}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-1 mb-0.5">
-                    <h3 className={`text-sm font-bold leading-tight line-clamp-1 transition-colors ${sel ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
-                      {loc.name[lang]}
-                    </h3>
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
-                      <Star size={10} className="text-yellow-400 fill-yellow-400" />
-                      <span className="text-xs font-semibold text-gray-700">{loc.rating}</span>
+          ) : (
+            <>
+              {filtered.map(loc => {
+                const sel = isSelected(loc.id)
+                return (
+                  <div
+                    key={loc.id}
+                    onClick={() => toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null })}
+                    className={`group flex gap-3 p-4 cursor-pointer border-b border-gray-50 transition-all ${
+                      sel ? 'bg-primary/5 border-l-2 border-l-primary' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img src={loc.image} alt={loc.name[lang]} className="w-16 h-16 rounded-xl object-cover" />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-xs"
+                        style={{ backgroundColor: categoryColors[loc.category] || '#3B6FF0' }}>
+                        {sel
+                          ? <CheckCircle2 size={12} className="text-white" />
+                          : <span>{categoryEmoji[loc.category] || '📍'}</span>}
+                      </div>
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-1 mb-0.5">
+                        <h3 className={`text-sm font-bold leading-tight line-clamp-1 transition-colors ${sel ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
+                          {loc.name[lang]}
+                        </h3>
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          <Star size={10} className="text-yellow-400 fill-yellow-400" />
+                          <span className="text-xs font-semibold text-gray-700">{loc.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-1.5">{loc.description[lang]}</p>
+                      <div className="flex items-center gap-2 text-gray-400">
+                        <div className="flex items-center gap-0.5"><Clock size={10} /><span className="text-[10px]">{loc.duration[lang]}</span></div>
+                        <span className="text-gray-200">·</span>
+                        <div className="flex items-center gap-0.5"><CalendarDays size={10} /><span className="text-[10px]">{loc.season[lang]}</span></div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); navigate(`/explore/${loc.id}`) }}
+                      className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ChevronRight size={16} className="text-gray-400" />
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-1.5">{loc.description[lang]}</p>
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <div className="flex items-center gap-0.5"><Clock size={10} /><span className="text-[10px]">{loc.duration[lang]}</span></div>
-                    <span className="text-gray-200">·</span>
-                    <div className="flex items-center gap-0.5"><CalendarDays size={10} /><span className="text-[10px]">{loc.season[lang]}</span></div>
-                  </div>
-                </div>
-                <button
-                  onClick={e => { e.stopPropagation(); navigate(`/explore/${loc.id}`) }}
-                  className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <ChevronRight size={16} className="text-gray-400" />
-                </button>
-              </div>
-            )
-          })}
+                )
+              })}
+
+              {/* Province locations for selected region */}
+              {filteredProvinceLocations.length > 0 && (
+                <>
+                  {filtered.length > 0 && (
+                    <div className="px-4 py-2 bg-violet-50 border-y border-violet-100">
+                      <p className="text-[11px] font-bold text-violet-600">
+                        🗺️ {lang === 'kr' ? '아이막 명소' : lang === 'mn' ? 'Аймгийн газрууд' : 'Province Sites'}
+                      </p>
+                    </div>
+                  )}
+                  {filteredProvinceLocations.map(loc => {
+                    const sel = isSelected(loc.id)
+                    return (
+                      <div
+                        key={loc.id}
+                        onClick={() => toggleItem({ id: loc.id, name: loc.name, lat: loc.lat, lng: loc.lng, province: loc.province })}
+                        className={`group flex gap-3 p-4 cursor-pointer border-b border-gray-50 transition-all ${
+                          sel ? 'bg-violet-50 border-l-2 border-l-violet-500' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="relative flex-shrink-0">
+                          <img src={getProvinceImage(loc)} alt={loc.name} className="w-16 h-16 rounded-xl object-cover" />
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-xs bg-violet-500">
+                            {sel
+                              ? <CheckCircle2 size={12} className="text-white" />
+                              : <span className="text-white text-[8px]">📍</span>}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`text-sm font-bold leading-tight line-clamp-1 transition-colors ${sel ? 'text-violet-600' : 'text-gray-900 group-hover:text-violet-600'}`}>
+                            {loc.name}
+                          </h3>
+                          <p className="text-[10px] text-violet-500 font-medium mt-0.5">{loc.province} аймаг</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {/* ── Selected items panel ── */}
