@@ -1,6 +1,6 @@
 <div align="center">
 
-public/images/logoimage.svg
+
 
 ## AI 기반 몽골 여행 가이드 플랫폼
 
