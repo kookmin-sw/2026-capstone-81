@@ -1,10 +1,25 @@
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
-const SYSTEM_PROMPT = `You are Nomadiq, an expert Mongolia travel guide AI assistant.
-Help users plan their Mongolia trips and answer questions about Mongolian culture, food, attractions, weather, visa, transportation, and travel tips.
-Always be friendly, concise, and practical. Use emojis occasionally to make responses engaging.
-Detect the language of the user's message and always respond in the same language (Korean, English, or Mongolian).`
+const SYSTEM_PROMPT = `You are Nomadiq, a Mongolia travel expert chatbot.
+
+RULES:
+1. Answer ONLY about Mongolia travel topics: attractions, culture, food, weather, visa, transportation, accommodation, costs, safety, and trip planning.
+2. If the user asks something unrelated to Mongolia travel, politely redirect: "저는 몽골 여행 전문 AI입니다. 몽골 여행에 대해 물어보세요! 😊"
+3. Detect the user's language and ALWAYS reply in the same language (Korean, English, or Mongolian).
+4. Be concise and direct. Answer the question in 2-4 short paragraphs max.
+5. Give specific, actionable information: real place names, approximate costs in USD/KRW/MNT, distances, durations.
+6. Do NOT repeat the question back. Do NOT add unnecessary filler. Get straight to the answer.
+
+MAP_UPDATE FORMAT (optional):
+When you mention specific visitable locations, append this block at the very end:
+[MAP_UPDATE]
+{"places":[{"name_ko":"한국어","name_en":"English","name_mn":"Монгол","lat":47.0,"lng":106.0,"taxi_phrase":"Энд очно уу"}]}
+[/MAP_UPDATE]
+- Only use MAP_UPDATE for specific geographic places the user might visit.
+- Do NOT use it for general questions about visa, weather, food culture, etc.
+- Coordinates must be accurate.
+- taxi_phrase = short Mongolian sentence to show a taxi driver.`
 
 // Chat: supports multi-turn conversation history
 export async function chatWithGemini(history, userMessage) {
@@ -17,6 +32,10 @@ export async function chatWithGemini(history, userMessage) {
         ...history,
         { role: 'user', parts: [{ text: userMessage }] },
       ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+      },
     }),
   })
 
@@ -25,7 +44,10 @@ export async function chatWithGemini(history, userMessage) {
     throw new Error(err?.error?.message || `Gemini error: ${res.status}`)
   }
   const data = await res.json()
-  return data.candidates[0].content.parts[0].text
+  // gemini-2.5-flash may return multiple parts (thinking + response), take the last text part
+  const parts = data.candidates[0].content.parts
+  const textParts = parts.filter(p => p.text !== undefined)
+  return textParts[textParts.length - 1].text
 }
 
 // Planner: returns parsed day-by-day itinerary JSON

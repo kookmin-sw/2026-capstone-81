@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Star, Clock, Calendar, Heart, Share2, MapPin, Sparkles } from 'lucide-react'
+import { ArrowLeft, Star, Clock, Calendar, Heart, Share2, MapPin, Sparkles, Plus } from 'lucide-react'
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
@@ -33,10 +33,19 @@ export default function ExploreDetail() {
     setLiked(p => !p)
   }
 
+  const [activeTab, setActiveTab] = useState('intro')
+
   const loc = locations.find(l => l.id === Number(id))
   if (!loc) return <div className="p-8 text-center text-gray-400">{tr('no_results')}</div>
 
   const related = locations.filter(l => l.id !== loc.id && l.category === loc.category).slice(0, 3)
+
+  const TABS = [
+    { key: 'intro',    label: { kr: '소개',   en: 'About',   mn: 'Тойм'   } },
+    { key: 'blogger',  label: { kr: '블로거', en: 'Bloggers',mn: 'Блогер' } },
+    { key: 'info',     label: { kr: '정보',   en: 'Info',    mn: 'Мэдээлэл'} },
+    { key: 'review',   label: { kr: '후기',   en: 'Reviews', mn: 'Сэтгэгдэл'} },
+  ]
 
   return (
     <div className="flex flex-col h-full bg-[#F8F9FB]">
@@ -87,39 +96,112 @@ export default function ExploreDetail() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-20">
-        {/* Info strip */}
-        <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-5">
-          <div className="flex items-center gap-1.5">
-            <Clock size={14} className="text-primary" />
-            <div>
-              <p className="text-[10px] text-gray-400">{tr('detail_recommended_duration')}</p>
-              <p className="text-xs font-bold text-gray-800">{loc.duration[lang]}</p>
-            </div>
-          </div>
-          <div className="w-px h-8 bg-gray-100" />
-          <div className="flex items-center gap-1.5">
-            <Calendar size={14} className="text-primary" />
-            <div>
-              <p className="text-[10px] text-gray-400">{tr('detail_best_season')}</p>
-              <p className="text-xs font-bold text-gray-800">{loc.season[lang]}</p>
-            </div>
-          </div>
-          <div className="w-px h-8 bg-gray-100" />
-          <div className="flex items-center gap-1.5">
-            <MapPin size={14} className="text-primary" />
-            <div>
-              <p className="text-[10px] text-gray-400">GPS</p>
-              <p className="text-xs font-bold text-gray-800">{loc.lat.toFixed(1)}°N</p>
-            </div>
-          </div>
+      <div className="flex-1 overflow-y-auto pb-24">
+
+        {/* 탭 */}
+        <div className="bg-white border-b border-gray-100 flex">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`flex-1 py-3 text-xs font-semibold relative transition-all ${
+                activeTab === t.key ? 'text-primary' : 'text-gray-400'
+              }`}
+            >
+              {t.label[lang]}
+              {activeTab === t.key && (
+                <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
         </div>
 
-        {/* About */}
-        <div className="bg-white mt-2 px-4 py-4">
-          <h2 className="text-sm font-black text-gray-900 mb-2">{tr('detail_intro')}</h2>
-          <p className="text-sm text-gray-600 leading-relaxed">{loc.description[lang]}</p>
-        </div>
+        {/* 소개 탭 */}
+        {activeTab === 'intro' && (
+          <>
+            {/* 여행 정보 3개 */}
+            <div className="bg-white mt-2 px-4 py-3 flex justify-around">
+              <div className="text-center">
+                <p className="text-[10px] text-gray-400 mb-0.5">
+                  {lang === 'kr' ? '최적 여행 시기' : lang === 'en' ? 'Best Season' : 'Хамгийн сайн цаг'}
+                </p>
+                <p className="text-xs font-bold text-gray-800">{loc.season[lang]}</p>
+              </div>
+              <div className="w-px bg-gray-100" />
+              <div className="text-center">
+                <p className="text-[10px] text-gray-400 mb-0.5">
+                  {lang === 'kr' ? '여행 기간' : lang === 'en' ? 'Duration' : 'Хугацаа'}
+                </p>
+                <p className="text-xs font-bold text-gray-800">{loc.duration[lang]}</p>
+              </div>
+              <div className="w-px bg-gray-100" />
+              <div className="text-center">
+                <p className="text-[10px] text-gray-400 mb-0.5">
+                  {lang === 'kr' ? '난이도' : lang === 'en' ? 'Difficulty' : 'Хүнд хэцүү'}
+                </p>
+                <p className="text-xs font-bold text-primary">
+                  {lang === 'kr' ? '쉬움' : lang === 'en' ? 'Easy' : 'Хялбар'}
+                </p>
+              </div>
+            </div>
+
+            {/* 설명 */}
+            <div className="bg-white mt-2 px-4 py-4">
+              <p className="text-sm text-gray-600 leading-relaxed">{loc.description[lang]}</p>
+            </div>
+
+            {/* 다른 여행자 후기 */}
+            <div className="bg-white mt-2 px-4 py-4">
+              <h2 className="text-sm font-black text-gray-900 mb-3">
+                {lang === 'kr' ? '다른 여행자 후기' : lang === 'en' ? 'Traveler Reviews' : 'Аялагчдын сэтгэгдэл'}
+              </h2>
+              {[
+                { name: 'Traveler_J', time: lang === 'kr' ? '3일 전' : '3d ago', text: lang === 'kr' ? '정말 아름다운 곳이에요! 꼭 다시 오고 싶어요.' : 'Absolutely beautiful! Would love to visit again.' },
+                { name: 'NomadMN', time: lang === 'kr' ? '1주일 전' : '1w ago', text: lang === 'kr' ? '몽골에서 가장 인상 깊었던 장소입니다.' : 'The most impressive place in Mongolia.' },
+              ].map((r, i) => (
+                <div key={i} className="flex gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
+                    {r.name[0]}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-xs font-bold text-gray-800">{r.name}</span>
+                      <span className="text-[10px] text-gray-400">{r.time}</span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">{r.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* 정보 탭 */}
+        {activeTab === 'info' && (
+          <div className="bg-white mt-2 px-4 py-4 space-y-3">
+            {[
+              { icon: Calendar, label: lang === 'kr' ? '최적 시기' : 'Best Season', value: loc.season[lang] },
+              { icon: Clock, label: lang === 'kr' ? '여행 기간' : 'Duration', value: loc.duration[lang] },
+              { icon: MapPin, label: lang === 'kr' ? '위치' : 'Location', value: `${loc.lat.toFixed(2)}°N, ${loc.lng.toFixed(2)}°E` },
+              { icon: Star, label: lang === 'kr' ? '평점' : 'Rating', value: `${loc.rating} / 5.0` },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                <Icon size={16} className="text-primary flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-[10px] text-gray-400">{label}</p>
+                  <p className="text-xs font-bold text-gray-800">{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 블로거/후기 탭 placeholder */}
+        {(activeTab === 'blogger' || activeTab === 'review') && (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <p className="text-sm">{lang === 'kr' ? '준비 중입니다' : lang === 'en' ? 'Coming soon' : 'Удахгүй'}</p>
+          </div>
+        )}
 
         {/* Related */}
         {related.length > 0 && (
@@ -147,22 +229,17 @@ export default function ExploreDetail() {
           </div>
         )}
 
-        {/* CTA */}
-        <div className="px-4 mt-3 flex gap-3">
-          <button
-            onClick={() => navigate('/planner')}
-            className="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-primary/25 active:scale-95 transition-all"
-          >
-            <Sparkles size={15} />
-            AI {lang === 'kr' ? '일정 만들기' : lang === 'en' ? 'Plan Trip' : 'Төлөвлөх'}
-          </button>
-          <button
-            onClick={() => navigate('/map', { state: { locationId: loc.id } })}
-            className="w-14 h-14 bg-white border border-gray-200 rounded-2xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-all"
-          >
-            <MapPin size={20} className="text-primary" />
-          </button>
-        </div>
+      </div>
+
+      {/* 고정 하단 버튼 */}
+      <div className="flex-shrink-0 px-4 py-3 bg-white border-t border-gray-100">
+        <button
+          onClick={() => navigate('/planner')}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-primary/25 active:scale-95 transition-all"
+        >
+          <Plus size={16} />
+          {lang === 'kr' ? '여행 계획에 추가' : lang === 'en' ? 'Add to Travel Plan' : 'Аяллын төлөвлөгөөнд нэмэх'}
+        </button>
       </div>
 
       <BottomNav />

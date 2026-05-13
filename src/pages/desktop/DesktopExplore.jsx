@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
 import { provinceLocations } from '../../data/provinceLocations'
+import { getProvinceImage } from '../../data/provinceImages'
 import { Search, Star, Clock, CalendarDays, SlidersHorizontal, MapPin, X, ChevronRight } from 'lucide-react'
 
 const PROVINCES = [
@@ -259,6 +260,10 @@ export default function DesktopExplore() {
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [region, setRegion] = useState('all')
+
+  useEffect(() => {
+    setSearch(searchParams.get('q') || '')
+  }, [searchParams])
   const [category, setCategory] = useState('all')
   const [sort, setSort] = useState('rating')
   const [selectedSeason, setSelectedSeason] = useState('summer')
@@ -289,7 +294,7 @@ export default function DesktopExplore() {
     : []
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50">
       {/* Page Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-8">
@@ -634,9 +639,7 @@ export default function DesktopExplore() {
                           onClick={() => navigate('/map')}
                           className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-purple-200 transition-all group"
                         >
-                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
-                            <MapPin size={14} className="text-purple-600" />
-                          </div>
+                          <img src={getProvinceImage(loc)} alt={loc.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-gray-900 truncate">{loc.name}</p>
                             <p className="text-xs text-gray-400">{loc.province}</p>

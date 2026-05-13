@@ -8,8 +8,7 @@ import WriteBlog from './pages/WriteBlog'
 import AIChat from './pages/AIChat'
 
 // Desktop pages
-import DesktopNav from './components/desktop/DesktopNav'
-import ChatWidget from './components/desktop/ChatWidget'
+import DesktopLayout from './components/desktop/DesktopLayout'
 import DesktopHome from './pages/desktop/DesktopHome'
 import DesktopExplore from './pages/desktop/DesktopExplore'
 import DesktopMap from './pages/desktop/DesktopMap'
@@ -22,6 +21,7 @@ import DesktopCulture from './pages/desktop/DesktopCulture'
 import DesktopBudget from './pages/desktop/DesktopBudget'
 import DesktopRestaurants from './pages/desktop/DesktopRestaurants'
 import DesktopSaved from './pages/desktop/DesktopSaved'
+import DesktopPacking from './pages/desktop/DesktopPacking'
 
 // Mobile pages
 import MobileHome from './pages/mobile/MobileHome'
@@ -29,21 +29,24 @@ import MobileExplore from './pages/mobile/MobileExplore'
 import MobilePlanner from './pages/mobile/MobilePlanner'
 import MobileMap from './pages/mobile/MobileMap'
 import MobileProfile from './pages/mobile/MobileProfile'
+import MobileBlog from './pages/mobile/MobileBlog'
 
 // Shared pages (used in both mobile and desktop)
-import { BlogList, BlogDetail } from './pages/Blog'
+import { BlogDetail } from './pages/Blog'
 import Culture from './pages/Culture'
 import Budget from './pages/Budget'
 import Restaurants from './pages/Restaurants'
 import ExploreDetail from './pages/ExploreDetail'
 
-const isMobile = () => window.innerWidth < 768
+const FORCE_MODE = import.meta.env.VITE_MODE // 'mobile' | 'desktop' | undefined
+const isMobile = () =>
+  FORCE_MODE === 'mobile' ? true
+  : FORCE_MODE === 'desktop' ? false
+  : window.innerWidth < 768
 
 function DesktopApp() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DesktopNav />
-      <ChatWidget />
+    <DesktopLayout>
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/login" element={<Login />} />
@@ -52,6 +55,7 @@ function DesktopApp() {
         <Route path="/explore/:id" element={<DesktopDetail />} />
         <Route path="/map" element={<DesktopMap />} />
         <Route path="/culture" element={<DesktopCulture />} />
+        <Route path="/packing" element={<DesktopPacking />} />
         <Route path="/budget" element={<DesktopBudget />} />
         <Route path="/restaurants" element={<DesktopRestaurants />} />
         <Route path="/blog" element={<DesktopBlog />} />
@@ -64,7 +68,7 @@ function DesktopApp() {
         <Route path="/chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
-    </div>
+    </DesktopLayout>
   )
 }
 
@@ -80,7 +84,7 @@ function MobileApp() {
       <Route path="/map" element={<MobileMap />} />
       <Route path="/profile" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
       <Route path="/saved" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
-      <Route path="/blog" element={<BlogList />} />
+      <Route path="/blog" element={<MobileBlog />} />
       <Route path="/blog/:id" element={<BlogDetail />} />
       <Route path="/post/:id" element={<UserBlogDetail />} />
       <Route path="/write" element={<ProtectedRoute><WriteBlog /></ProtectedRoute>} />

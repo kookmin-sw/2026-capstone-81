@@ -13,6 +13,7 @@ export default function DesktopBlog() {
   const { user } = useAuth()
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState('all') // 'all' | 'mine'
+  const [catFilter, setCatFilter] = useState('all')
   const [userPosts, setUserPosts] = useState([])
 
   useEffect(() => {
@@ -43,16 +44,26 @@ export default function DesktopBlog() {
 
   const sourceList = tab === 'mine' ? (myPosts || []) : allPosts
 
+  const BLOG_CATS = [
+    { key: 'all', label: { kr: '전체', en: 'All', mn: 'Бүгд' } },
+    { key: '몽골', label: { kr: '몽골', en: 'Mongolia', mn: 'Монгол' } },
+    { key: '자연', label: { kr: '자연', en: 'Nature', mn: 'Байгаль' } },
+    { key: '여행팁', label: { kr: '여행 팁', en: 'Travel Tips', mn: 'Зөвлөмж' } },
+  ]
+
   const filtered = sourceList.filter(p => {
-    if (!search) return true
+    if (!search && catFilter === 'all') return true
     const title = p._type === 'static' ? (p.title[lang] || '') : (p.title || '')
     const excerpt = p._type === 'static' ? (p.excerpt?.[lang] || '') : (p.content || '')
+    const cat = p._type === 'static' ? (p.category?.[lang] || p.category?.en || '') : (p.category || '')
     const q = search.toLowerCase()
-    return title.toLowerCase().includes(q) || excerpt.toLowerCase().includes(q)
+    const matchQ = !search || title.toLowerCase().includes(q) || excerpt.toLowerCase().includes(q)
+    const matchCat = catFilter === 'all' || cat.includes(catFilter)
+    return matchQ && matchCat
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
@@ -100,8 +111,23 @@ export default function DesktopBlog() {
           ) : null}
         </div>
 
+        {/* Category chips */}
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide">
+          {BLOG_CATS.map(c => (
+            <button
+              key={c.key}
+              onClick={() => setCatFilter(c.key)}
+              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                catFilter === c.key ? 'bg-primary text-white' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              {c.label[lang]}
+            </button>
+          ))}
+        </div>
+
         {/* Search */}
-        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 mb-8 shadow-sm">
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 mb-6 shadow-sm">
           <Search size={16} className="text-gray-400 flex-shrink-0" />
           <input
             type="text"
@@ -118,13 +144,63 @@ export default function DesktopBlog() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-gray-400 text-sm">{l.empty}</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map(post =>
-              post._type === 'static'
-                ? <StaticCard key={post.id} blog={post} lang={lang} navigate={navigate} label={l.read} />
-                : <UserCard key={post.id} post={post} navigate={navigate} label={l.read} />
+          <>
+            {/* Featured post */}
+            {tab === 'all' && catFilter === 'all' && filtered[0]?._type === 'static' && (
+              <article
+                onClick={() => navigate(`/blog/${filtered[0].id}`)}
+                className="flex bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 mb-6"
+              >
+                <div className="relative w-2/5 flex-shrink-0" style={{ minHeight: 240 }}>
+                  <img
+                    src={filtered[0].image}
+                    alt={filtered[0].title[lang]}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                  <span className="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
+                    ✨ {lang === 'kr' ? '추천 글' : lang === 'en' ? 'Featured' : 'Онцлох'}
+                  </span>
+                </div>
+                <div className="flex-1 p-6 flex flex-col justify-between">
+                  <div>
+                    <span className="inline-block bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
+                      {filtered[0].category[lang]}
+                    </span>
+                    <h2 className="text-xl font-black text-gray-900 leading-snug mb-3 line-clamp-2">
+                      {filtered[0].title[lang]}
+                    </h2>
+                    <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
+                      {filtered[0].excerpt[lang]}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <span className="font-semibold text-gray-600">{filtered[0].author}</span>
+                      <span>·</span>
+                      <span>{filtered[0].date}</span>
+                      <span>·</span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={10} /> {filtered[0].readTime[lang]}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="flex items-center gap-1 text-gray-400">
+                        <Heart size={10} className="fill-red-400 text-red-400" /> {filtered[0].likes}
+                      </span>
+                      <span className="text-primary font-bold">{l.read} →</span>
+                    </div>
+                  </div>
+                </div>
+              </article>
             )}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(tab === 'all' && catFilter === 'all' ? filtered.slice(1) : filtered).map(post =>
+                post._type === 'static'
+                  ? <StaticCard key={post.id} blog={post} lang={lang} navigate={navigate} label={l.read} />
+                  : <UserCard key={post.id} post={post} navigate={navigate} label={l.read} />
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

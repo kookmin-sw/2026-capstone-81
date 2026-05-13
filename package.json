@@ -5,13 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mobile": "vite --mode mobile --port 5173",
+    "dev:desktop": "vite --mode desktop --port 5174",
     "build": "vite build",
+    "build:mobile": "vite build --mode mobile --outDir dist-mobile",
+    "build:desktop": "vite build --mode desktop --outDir dist-desktop",
     "preview": "vite preview",
     "test": "vitest --run"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.3",
     "@capacitor/app": "^8.1.0",
+    "@react-google-maps/api": "^2.20.8",
     "firebase": "^12.12.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.456.0",

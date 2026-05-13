@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react'
 import { chatWithGemini } from '../../utils/gemini'
 
-const GREETING = '안녕하세요! 몽골 여행 전문 AI 가이드 Nomadiq입니다. 여행 계획, 맛집, 비자, 날씨 등 무엇이든 물어보세요! 😊'
+const GREETING = '안녕하세요! 몽골 여행 전문 Chatbot Nomadiq입니다. 여행 계획, 맛집, 비자, 날씨 등 무엇이든 물어보세요! 😊'
 
 const SUGGESTIONS = [
   '몽골 여행 최적 시기는?',
@@ -62,7 +62,7 @@ export default function ChatWidget() {
               <Sparkles size={17} className="text-yellow-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-black text-sm leading-tight">Nomadiq AI</p>
+              <p className="text-white font-black text-sm leading-tight">Nomadiq Chatbot</p>
               <div className="flex items-center gap-1 mt-0.5">
                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
                 <span className="text-white/60 text-[10px]">온라인</span>

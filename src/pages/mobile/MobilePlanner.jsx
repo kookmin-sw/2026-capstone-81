@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLang } from '../../context/LangContext'
-import { generatePlanWithAI } from '../../utils/api'
+import { generatePlanWithGemini } from '../../utils/gemini'
 import { Sparkles, ChevronDown, ChevronUp, Clock, MapPin, Loader } from 'lucide-react'
 import MobileLayout from './MobileLayout'
 
@@ -38,7 +38,7 @@ export default function MobilePlanner() {
     try {
       const langLabel = lang === 'kr' ? 'Korean' : lang === 'en' ? 'English' : 'Mongolian'
       const interestLabels = selectedInterests.map(k => INTERESTS.find(i => i.key === k)?.label.en || k)
-      const result = await generatePlanWithAI(days, interestLabels, langLabel, null, startDate || null, departureCity || null)
+      const result = await generatePlanWithGemini(days, interestLabels, langLabel)
       setPlan(result)
       setExpandedDay(0)
     } catch (e) {
