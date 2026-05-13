@@ -2,9 +2,9 @@
 
 <img src="./public/images/logoimage.svg" alt="Nomadiq Logo" width="120" />
 
-<div align="center">
-  
-## AI 기반 몽골 여행 가이드 플랫폼
+### AI 기반 몽골 여행 가이드 플랫폼
+
+C:\Users\Nomin\2026-capstone-81\db-pic\ui.png
 
 **국민대학교 2026 캡스톤 디자인 | 팀 81**
 
@@ -190,7 +190,7 @@ Android 네이티브 앱(Capacitor), PWA, 데스크탑 웹을 **단일 코드베
 - **npm** 9 이상
 - [Firebase 프로젝트](https://console.firebase.google.com/) 생성 완료
 - [Google Gemini API 키](https://aistudio.google.com/app/apikey) 발급
-- Google Maps / Places API 키
+- *(선택)* Google Maps / Places API 키
 
 ### 설치
 
@@ -375,7 +375,7 @@ capstone-2026-81/
 | 학번 | 이름 | 역할 | GitHub |
 |------|------|------|--------|
 | 20223579 | 노민 에르덴 | 
-| 20213003 | 빌랙자르갈 | 
+| 20213003 | 빌랙자르갈 |
 | 20223582 | 체벡수랭홀랑 | 
 | 20233064 | 오트공체체그 | 
 | 20233121 | 헌거르졸 | 
