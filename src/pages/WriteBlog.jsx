@@ -34,10 +34,28 @@ export default function WriteBlog() {
     mn: { titlePh: 'Гарчиг', contentPh: 'Аяллын түүхээ бичнэ үү...', photo: 'Зураг нэмэх', submit: 'Нийтлэх', pub: 'Нийтэлж байна...', uploading: 'Зураг байршуулж байна...', saving: 'Хадгалж байна...' },
   }[lang] || { titlePh: 'Title', contentPh: 'Write your story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...', uploading: 'Uploading...', saving: 'Saving...' }
 
+  const compressImage = (file) =>
+    new Promise((resolve) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX = 1200
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width * scale
+        canvas.height = img.height * scale
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(blob => resolve(blob ?? file), 'image/jpeg', 0.8)
+      }
+      img.onerror = () => resolve(file)
+      img.src = url
+    })
+
   const handleImage = (e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > 5 * 1024 * 1024) { setError('Max 5MB'); return }
+    if (f.size > 20 * 1024 * 1024) { setError('Max 20MB'); return }
     setImageFile(f); setPreview(URL.createObjectURL(f)); setError('')
   }
 
@@ -51,8 +69,9 @@ export default function WriteBlog() {
       if (imageFile && storage) {
         try {
           setUploadStatus(t.uploading)
-          const sRef = ref(storage, `blog-images/${Date.now()}_${imageFile.name}`)
-          await uploadBytes(sRef, imageFile)
+          const compressed = await compressImage(imageFile)
+          const sRef = ref(storage, `blog-images/${Date.now()}_${imageFile.name.replace(/\.[^.]+$/, '.jpg')}`)
+          await uploadBytes(sRef, compressed)
           imageUrl = await getDownloadURL(sRef)
         } catch {
           // Storage unavailable — post with default image

@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useState, useEffect, useRef } from 'react'
+import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
@@ -9,49 +7,44 @@ import { provinceLocations } from '../../data/provinceLocations'
 import { getProvinceImage } from '../../data/provinceImages'
 import { Star, Clock, CalendarDays, MapPin, Search, X, ChevronRight, Sparkles, Layers, CheckCircle2 } from 'lucide-react'
 
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-})
+const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 const categoryColors = { nature: '#22c55e', culture: '#3b82f6', activity: '#f97316' }
 const categoryEmoji = { nature: '🏔️', culture: '🏛️', activity: '🐎' }
 
-function createCustomIcon(category, isSelected) {
-  const color = categoryColors[category] || '#3B6FF0'
-  const size = isSelected ? 44 : 36
-  const inner = isSelected ? 10 : 7
-  const border = isSelected ? `<circle cx="18" cy="18" r="14" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"/>` : ''
-  const shadow = isSelected ? `drop-shadow(0 4px 12px ${color}80)` : ''
-  const svg = `<svg width="${size}" height="${Math.round(size*1.25)}" viewBox="0 0 36 45" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:${shadow}">
-    <path d="M18 0C8.059 0 0 8.059 0 18C0 31.5 18 45 18 45C18 45 36 31.5 36 18C36 8.059 27.941 0 18 0Z" fill="${color}"/>
-    <circle cx="18" cy="18" r="11" fill="white"/>
-    <circle cx="18" cy="18" r="${inner}" fill="${color}"/>
-    ${border}
-  </svg>`
-  return L.divIcon({ html: svg, iconSize: [size, Math.round(size*1.25)], iconAnchor: [size/2, Math.round(size*1.25)], popupAnchor: [0, -Math.round(size*1.25)], className: '' })
+const MAP_OPTIONS = {
+  disableDefaultUI: false,
+  zoomControl: true,
+  streetViewControl: false,
+  mapTypeControl: true,
+  fullscreenControl: true,
+  clickableIcons: false,
+  styles: [
+    { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  ],
 }
 
-function createProvinceIcon(isSelected) {
-  const color = isSelected ? '#7c3aed' : '#8b5cf6'
-  const size = isSelected ? 30 : 22
-  const ring = isSelected ? `<circle cx="11" cy="11" r="9" fill="none" stroke="#7c3aed" stroke-width="2" opacity="0.35"/>` : ''
+function makeIcon(color, size, ring = false) {
+  const h = Math.round(size * 1.25)
+  const r = ring ? `<circle cx="18" cy="18" r="14" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"/>` : ''
+  const svg = `<svg width="${size}" height="${h}" viewBox="0 0 36 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 0C8.059 0 0 8.059 0 18C0 31.5 18 45 18 45C18 45 36 31.5 36 18C36 8.059 27.941 0 18 0Z" fill="${color}"/>
+    <circle cx="18" cy="18" r="11" fill="white"/>
+    <circle cx="18" cy="18" r="7" fill="${color}"/>
+    ${r}
+  </svg>`
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}` }
+}
+
+function makeProvinceIcon(selected) {
+  const color = selected ? '#7c3aed' : '#8b5cf6'
+  const size = selected ? 28 : 20
   const svg = `<svg width="${size}" height="${size}" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="11" cy="11" r="10" fill="${color}" stroke="white" stroke-width="2"/>
     <circle cx="11" cy="11" r="4" fill="white"/>
-    ${ring}
   </svg>`
-  return L.divIcon({ html: svg, iconSize: [size, size], iconAnchor: [size/2, size/2], popupAnchor: [0, -(size/2+4)], className: '' })
-}
-
-function FlyToLocation({ location }) {
-  const map = useMap()
-  useEffect(() => {
-    if (location) map.flyTo([location.lat, location.lng], 9, { duration: 1.2 })
-  }, [location, map])
-  return null
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}` }
 }
 
 const CATEGORIES = [
@@ -64,62 +57,40 @@ const CATEGORIES = [
 export default function DesktopMap() {
   const navigate = useNavigate()
   const { lang, tr } = useLang()
+  const mapRef = useRef(null)
+
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [region, setRegion] = useState('all')
   const [showProvince, setShowProvince] = useState(false)
-  const [selectedItems, setSelectedItems] = useState([])  // unified multi-select list
-  const [lastFly, setLastFly] = useState(null)
+  const [selectedItems, setSelectedItems] = useState([])
+  const [activeMarkerId, setActiveMarkerId] = useState(null)
+  const [hoverMarkerId, setHoverMarkerId] = useState(null)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [userLocation, setUserLocation] = useState(null)
-  
+
+  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GMAPS_KEY })
+
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        })
-      },
-      (error) => {
-        console.log("Location error:", error)
-      }
+      pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {}
     )
   }, [])
 
-  // Map location region field to aimag filter keys
   const REGION_MAP = {
-    ub: 'ub',
-    gobi: 'omngov',
-    terelj: 'tuv',
-    khuvsgul: 'khuvsgul',
-    kharkhorin: 'ovorkh',
-    orkhon: 'ovorkh',
-    bayan: 'bayanolgii',
+    ub: 'ub', gobi: 'omngov', terelj: 'tuv', khuvsgul: 'khuvsgul',
+    kharkhorin: 'ovorkh', orkhon: 'ovorkh', bayan: 'bayanolgii',
   }
 
-  // Map province names (from provinceLocations) to REGIONS keys
   const PROVINCE_TO_REGION = {
-    'Архангай': 'arkhangai',
-    'Баян-Өлгий': 'bayanolgii',
-    'Баянхонгор': 'bayankh',
-    'Булган': 'bulgan',
-    'Говь-Алтай': 'govaltai',
-    'Говьсүмбэр': 'govsumb',
-    'Дархан-Уул': 'darkhan',
-    'Дорноговь': 'dorngov',
-    'Дорнод': 'dornod',
-    'Дундговь': 'dundgov',
-    'Завхан': 'zavkhan',
-    'Орхон': 'orkhon',
-    'Өвөрхангай': 'ovorkh',
-    'Өмнөговь': 'omngov',
-    'Ховд': 'khovd',
-    'Увс': 'uvs',
-    'Хөвсгөл': 'khuvsgul',
-    'Сэлэнгэ': 'selenge',
-    'Сүхбаатар': 'sukhbaatar',
-    'Хэнтий': 'khentii',
-    'Төв': 'tuv',
+    'Архангай': 'arkhangai', 'Баян-Өлгий': 'bayanolgii', 'Баянхонгор': 'bayankh',
+    'Булган': 'bulgan', 'Говь-Алтай': 'govaltai', 'Говьсүмбэр': 'govsumb',
+    'Дархан-Уул': 'darkhan', 'Дорноговь': 'dorngov', 'Дорнод': 'dornod',
+    'Дундговь': 'dundgov', 'Завхан': 'zavkhan', 'Орхон': 'orkhon',
+    'Өвөрхангай': 'ovorkh', 'Өмнөговь': 'omngov', 'Ховд': 'khovd',
+    'Увс': 'uvs', 'Хөвсгөл': 'khuvsgul', 'Сэлэнгэ': 'selenge',
+    'Сүхбаатар': 'sukhbaatar', 'Хэнтий': 'khentii', 'Төв': 'tuv',
   }
 
   const REGIONS = [
@@ -151,19 +122,22 @@ export default function DesktopMap() {
   const filtered = locations.filter(loc => {
     const matchCat = filter === 'all' || loc.category === filter
     const matchRegion = region === 'all' || REGION_MAP[loc.region] === region
-    const matchSearch = !search || loc.name.kr.toLowerCase().includes(search.toLowerCase()) || loc.name.en.toLowerCase().includes(search.toLowerCase()) || loc.name.mn.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = !search ||
+      loc.name.kr.toLowerCase().includes(search.toLowerCase()) ||
+      loc.name.en.toLowerCase().includes(search.toLowerCase()) ||
+      loc.name.mn.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchRegion && matchSearch
   })
 
-  // Filter province locations by selected region
   const filteredProvinceLocations = region === 'all'
     ? []
     : provinceLocations.filter(loc => PROVINCE_TO_REGION[loc.province] === region)
 
-  const isSelected = (id) => selectedItems.some(i => i.id === id)
+  const isSelected = id => selectedItems.some(i => i.id === id)
 
-  const toggleItem = (item) => {
-    setLastFly({ lat: item.lat, lng: item.lng })
+  const toggleItem = item => {
+    mapRef.current?.panTo({ lat: item.lat, lng: item.lng })
+    mapRef.current?.setZoom(9)
     setSelectedItems(prev =>
       prev.some(i => i.id === item.id)
         ? prev.filter(i => i.id !== item.id)
@@ -171,29 +145,22 @@ export default function DesktopMap() {
     )
   }
 
-  const removeItem = (id) => setSelectedItems(prev => prev.filter(i => i.id !== id))
+  const removeItem = id => setSelectedItems(prev => prev.filter(i => i.id !== id))
 
   const goToPlanner = () => {
     const names = selectedItems.map(i => i.name).join(',')
     navigate(`/planner?locations=${encodeURIComponent(names)}`)
   }
 
-  const L_HINT = {
-    kr: '마커를 클릭해 여러 장소를 선택하세요',
-    en: 'Click markers to select multiple locations',
-    mn: 'Маркер дарж олон газар сонгоно уу',
-  }
-
   return (
     <div className="flex h-[calc(100vh-60px)] overflow-hidden bg-white">
+
       {/* ── Left panel ── */}
       <aside className="w-96 flex-shrink-0 flex flex-col border-r border-gray-100 bg-white overflow-hidden">
 
-        {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex-shrink-0">
           <h1 className="text-xl font-black text-gray-900 mb-4">{tr('map_title')}</h1>
 
-          {/* Search */}
           <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2.5 mb-3">
             <Search size={15} className="text-gray-400 flex-shrink-0" />
             <input
@@ -206,7 +173,6 @@ export default function DesktopMap() {
             {search && <button onClick={() => setSearch('')}><X size={14} className="text-gray-400 hover:text-gray-600" /></button>}
           </div>
 
-          {/* 카테고리 필터 */}
           <div className="flex gap-2 flex-wrap mb-3">
             {CATEGORIES.map(cat => (
               <button key={cat.key} onClick={() => setFilter(cat.key)}
@@ -218,7 +184,6 @@ export default function DesktopMap() {
             ))}
           </div>
 
-          {/* 지역 (아이막) 필터 */}
           <div className="bg-gray-50 rounded-xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-black text-gray-700 flex items-center gap-1.5">
@@ -262,7 +227,7 @@ export default function DesktopMap() {
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 && filteredProvinceLocations.length === 0 ? (
             <div className="text-center py-10 px-5">
-              <p className="text-gray-400 text-sm">검색 결과가 없습니다</p>
+              <p className="text-gray-400 text-sm">{lang === 'kr' ? '검색 결과가 없습니다' : lang === 'en' ? 'No results found' : 'Үр дүн олдсонгүй'}</p>
             </div>
           ) : (
             <>
@@ -271,7 +236,7 @@ export default function DesktopMap() {
                 return (
                   <div
                     key={loc.id}
-                    onClick={() => toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null })}
+                    onClick={() => { toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null }); setActiveMarkerId(`loc-${loc.id}`) }}
                     className={`group flex gap-3 p-4 cursor-pointer border-b border-gray-50 transition-all ${
                       sel ? 'bg-primary/5 border-l-2 border-l-primary' : 'hover:bg-gray-50'
                     }`}
@@ -280,9 +245,7 @@ export default function DesktopMap() {
                       <img src={loc.image} alt={loc.name[lang]} className="w-16 h-16 rounded-xl object-cover" />
                       <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-xs"
                         style={{ backgroundColor: categoryColors[loc.category] || '#3B6FF0' }}>
-                        {sel
-                          ? <CheckCircle2 size={12} className="text-white" />
-                          : <span>{categoryEmoji[loc.category] || '📍'}</span>}
+                        {sel ? <CheckCircle2 size={12} className="text-white" /> : <span>{categoryEmoji[loc.category] || '📍'}</span>}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -312,7 +275,6 @@ export default function DesktopMap() {
                 )
               })}
 
-              {/* Province locations for selected region */}
               {filteredProvinceLocations.length > 0 && (
                 <>
                   {filtered.length > 0 && (
@@ -327,7 +289,7 @@ export default function DesktopMap() {
                     return (
                       <div
                         key={loc.id}
-                        onClick={() => toggleItem({ id: loc.id, name: loc.name, lat: loc.lat, lng: loc.lng, province: loc.province })}
+                        onClick={() => { toggleItem({ id: loc.id, name: loc.name, lat: loc.lat, lng: loc.lng, province: loc.province }); setActiveMarkerId(`prov-${loc.id}`) }}
                         className={`group flex gap-3 p-4 cursor-pointer border-b border-gray-50 transition-all ${
                           sel ? 'bg-violet-50 border-l-2 border-l-violet-500' : 'hover:bg-gray-50'
                         }`}
@@ -335,9 +297,7 @@ export default function DesktopMap() {
                         <div className="relative flex-shrink-0">
                           <img src={getProvinceImage(loc)} alt={loc.name} className="w-16 h-16 rounded-xl object-cover" />
                           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-xs bg-violet-500">
-                            {sel
-                              ? <CheckCircle2 size={12} className="text-white" />
-                              : <span className="text-white text-[8px]">📍</span>}
+                            {sel ? <CheckCircle2 size={12} className="text-white" /> : <span className="text-white text-[8px]">📍</span>}
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -355,10 +315,9 @@ export default function DesktopMap() {
           )}
         </div>
 
-        {/* ── Selected items panel ── */}
+        {/* Selected panel */}
         {selectedItems.length > 0 && (
           <div className="flex-shrink-0 border-t-2 border-primary/20 bg-white">
-            {/* Header row */}
             <div className="flex items-center justify-between px-4 pt-3 pb-2">
               <span className="text-xs font-black text-gray-900">
                 📍 {lang === 'kr' ? '선택한 장소' : lang === 'mn' ? 'Сонгосон газрууд' : 'Selected'}{' '}
@@ -368,121 +327,173 @@ export default function DesktopMap() {
                 {lang === 'kr' ? '전체 해제' : lang === 'mn' ? 'Бүгдийг цуцлах' : 'Clear all'}
               </button>
             </div>
-
-            {/* Chips */}
             <div className="px-4 pb-2 flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
               {selectedItems.map(item => (
                 <span key={item.id} className="flex items-center gap-1 bg-primary/10 text-primary text-xs px-2.5 py-1 rounded-full font-medium">
                   <span className="truncate max-w-[120px]">{item.name}</span>
-                  <button onClick={() => removeItem(item.id)} className="flex-shrink-0 hover:text-red-500 transition-colors">
-                    <X size={11} />
-                  </button>
+                  <button onClick={() => removeItem(item.id)} className="flex-shrink-0 hover:text-red-500 transition-colors"><X size={11} /></button>
                 </span>
               ))}
             </div>
-
-            {/* Generate button */}
             <div className="px-4 pb-4">
               <button
                 onClick={goToPlanner}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-primary to-violet-600 text-white text-sm font-black rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all"
               >
                 <Sparkles size={15} />
-                {lang === 'kr'
-                  ? `${selectedItems.length}곳 AI 일정 만들기`
-                  : lang === 'mn'
-                  ? `${selectedItems.length} газрын AI төлөвлөгөө`
-                  : `Plan ${selectedItems.length} locations with AI`}
+                {lang === 'kr' ? `${selectedItems.length}곳 AI 일정 만들기` : lang === 'mn' ? `${selectedItems.length} газрын AI төлөвлөгөө` : `Plan ${selectedItems.length} locations with AI`}
               </button>
             </div>
           </div>
         )}
       </aside>
 
-      {/* ── Map ── */}
-      <div className="flex-1 relative">
-        <MapContainer center={[47.5, 103.5]} zoom={5} style={{ height: '100%', width: '100%' }} zoomControl={true}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          />
-          {lastFly && <FlyToLocation location={lastFly} />}
-
-          {userLocation && (
-            <Marker position={[userLocation.lat, userLocation.lng]}>
-              <Popup>
-                📍 {lang === 'kr' ? '내 위치' : lang === 'mn' ? 'Миний байршил' : 'My Location'}
-              </Popup>
-            </Marker>
-          )}
-
-          {/* Province markers */}
-          {showProvince && provinceLocations.map(loc => (
-            <Marker
-              key={loc.id}
-              position={[loc.lat, loc.lng]}
-              icon={createProvinceIcon(isSelected(loc.id))}
-              eventHandlers={{ click: () => toggleItem({ id: loc.id, name: loc.name, lat: loc.lat, lng: loc.lng, province: loc.province }) }}
+      {/* ── Google Map ── */}
+      <div
+        className="flex-1 relative"
+        onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}
+        onMouseLeave={() => setHoverMarkerId(null)}
+      >
+        {/* Custom hover tooltip — pointerEvents:none so it never blocks map clicks */}
+        {hoverMarkerId && (() => {
+          const isLoc = hoverMarkerId.startsWith('loc-')
+          const isProv = hoverMarkerId.startsWith('prov-')
+          const locData = isLoc ? filtered.find(l => `loc-${l.id}` === hoverMarkerId) : null
+          const provData = isProv ? provinceLocations.find(l => `prov-${l.id}` === hoverMarkerId) : null
+          if (!locData && !provData) return null
+          const imgSrc = locData ? locData.image : getProvinceImage(provData)
+          return (
+            <div
+              className="fixed z-50 bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100"
+              style={{
+                left: mousePos.x + 18,
+                top: Math.max(80, mousePos.y - 140),
+                width: '220px',
+                pointerEvents: 'none',
+              }}
             >
-              <Popup className="custom-popup">
-                <div className="p-1 min-w-[180px]">
-                  <img src={getProvinceImage(loc)} alt={loc.name} className="w-full h-24 object-cover rounded-lg mb-2" />
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2.5 h-2.5 rounded-full bg-violet-500 flex-shrink-0" />
-                    <span className="text-[10px] text-violet-600 font-semibold">{loc.province} аймаг</span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 text-sm leading-snug mb-2">{loc.name}</h3>
-                  <p className="text-[10px] text-gray-400">
-                    {isSelected(loc.id)
-                      ? (lang === 'kr' ? '✓ 선택됨' : '✓ Сонгогдсон')
-                      : (lang === 'kr' ? '클릭하여 선택' : 'Дарж сонгох')}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+              <img src={imgSrc} alt="" className="w-full h-28 object-cover" style={{ display: 'block' }} />
+              <div className="p-2.5">
+                {locData && (
+                  <>
+                    <p className="text-[10px] font-bold mb-0.5" style={{ color: categoryColors[locData.category] || '#3B6FF0' }}>
+                      {categoryEmoji[locData.category]}{' '}
+                      {locData.category === 'nature' ? (lang === 'kr' ? '자연' : lang === 'mn' ? 'Байгаль' : 'Nature')
+                        : locData.category === 'culture' ? (lang === 'kr' ? '문화' : lang === 'mn' ? 'Соёл' : 'Culture')
+                        : (lang === 'kr' ? '액티비티' : lang === 'mn' ? 'Үйл ажиллагаа' : 'Activity')}
+                    </p>
+                    <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1">{locData.name[lang]}</h3>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <Star size={10} className="text-yellow-400 fill-yellow-400" />
+                      <span className="font-semibold text-gray-700">{locData.rating}</span>
+                      <span className="text-gray-300">·</span>
+                      <span>{locData.duration[lang]}</span>
+                    </div>
+                  </>
+                )}
+                {provData && (
+                  <>
+                    <p className="text-[10px] text-violet-500 font-bold mb-0.5">{provData.province} аймаг</p>
+                    <h3 className="font-bold text-gray-900 text-sm leading-tight">{provData.name}</h3>
+                  </>
+                )}
+                <p className="text-[10px] text-gray-400 mt-1.5">
+                  👆 {lang === 'kr' ? '클릭하여 선택' : lang === 'en' ? 'Click to select' : 'Дарж сонгоно уу'}
+                </p>
+              </div>
+            </div>
+          )
+        })()}
 
-          {/* Main location markers */}
-          {filtered.map(loc => (
-            <Marker
-              key={loc.id}
-              position={[loc.lat, loc.lng]}
-              icon={createCustomIcon(loc.category, isSelected(loc.id))}
-              eventHandlers={{ click: () => toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null }) }}
-            >
-              <Popup className="custom-popup">
-                <div className="p-1 min-w-[200px]">
-                  <img src={loc.image} alt={loc.name[lang]} className="w-full h-28 object-cover rounded-lg mb-2" />
-                  <h3 className="font-bold text-gray-900 text-sm">{loc.name[lang]}</h3>
-                  <div className="flex items-center gap-1 mt-0.5 mb-2">
-                    <Star size={11} className="text-yellow-400 fill-yellow-400" />
-                    <span className="text-xs font-semibold">{loc.rating}</span>
-                    <span className="text-gray-300 mx-1">·</span>
-                    <span className="text-xs text-gray-500">{loc.duration[lang]}</span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <button onClick={() => navigate(`/explore/${loc.id}`)}
-                      className="flex-1 py-1.5 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg">
-                      자세히
-                    </button>
-                    <button
-                      onClick={() => toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null })}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                        isSelected(loc.id) ? 'bg-red-50 text-red-500' : 'bg-primary text-white'
-                      }`}
-                    >
-                      {isSelected(loc.id) ? (lang === 'kr' ? '선택 해제' : 'Цуцлах') : (lang === 'kr' ? '+ 선택' : '+ Сонгох')}
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+        {!isLoaded ? (
+          <div className="flex items-center justify-center h-full bg-gray-100">
+            <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <GoogleMap
+            mapContainerStyle={{ height: '100%', width: '100%' }}
+            center={{ lat: 47.5, lng: 103.5 }}
+            zoom={5}
+            options={MAP_OPTIONS}
+            onLoad={map => { mapRef.current = map }}
+            onClick={() => { setActiveMarkerId(null); setHoverMarkerId(null) }}
+          >
+            {/* User location */}
+            {userLocation && (
+              <Marker
+                position={userLocation}
+                icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }}
+              />
+            )}
+
+            {/* Province markers */}
+            {showProvince && provinceLocations.map(loc => (
+              <Marker
+                key={`prov-${loc.id}`}
+                position={{ lat: loc.lat, lng: loc.lng }}
+                icon={makeProvinceIcon(isSelected(loc.id))}
+                onClick={() => { toggleItem({ id: loc.id, name: loc.name, lat: loc.lat, lng: loc.lng, province: loc.province }); setActiveMarkerId(`prov-${loc.id}`); setHoverMarkerId(null) }}
+                onMouseOver={() => setHoverMarkerId(`prov-${loc.id}`)}
+                onMouseOut={() => setHoverMarkerId(null)}
+              >
+                {activeMarkerId === `prov-${loc.id}` && (
+                  <InfoWindow onCloseClick={() => setActiveMarkerId(null)}>
+                    <div className="min-w-[180px] font-sans">
+                      <img src={getProvinceImage(loc)} alt={loc.name} className="w-full h-24 object-cover rounded-lg mb-2" />
+                      <p className="text-[10px] text-violet-600 font-semibold mb-0.5">{loc.province} аймаг</p>
+                      <h3 className="font-bold text-gray-900 text-sm">{loc.name}</h3>
+                    </div>
+                  </InfoWindow>
+                )}
+              </Marker>
+            ))}
+
+            {/* Main location markers */}
+            {filtered.map(loc => (
+              <Marker
+                key={`loc-${loc.id}`}
+                position={{ lat: loc.lat, lng: loc.lng }}
+                icon={makeIcon(categoryColors[loc.category] || '#3B6FF0', isSelected(loc.id) ? 44 : 36, isSelected(loc.id))}
+                onClick={() => { toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null }); setActiveMarkerId(`loc-${loc.id}`); setHoverMarkerId(null) }}
+                onMouseOver={() => setHoverMarkerId(`loc-${loc.id}`)}
+                onMouseOut={() => setHoverMarkerId(null)}
+              >
+                {activeMarkerId === `loc-${loc.id}` && (
+                  <InfoWindow onCloseClick={() => setActiveMarkerId(null)}>
+                    <div className="min-w-[200px] font-sans">
+                      <img src={loc.image} alt={loc.name[lang]} className="w-full h-28 object-cover rounded-lg mb-2" />
+                      <h3 className="font-bold text-gray-900 text-sm">{loc.name[lang]}</h3>
+                      <div className="flex items-center gap-1 mt-0.5 mb-2">
+                        <Star size={11} className="text-yellow-400 fill-yellow-400" />
+                        <span className="text-xs font-semibold">{loc.rating}</span>
+                        <span className="text-gray-300 mx-1">·</span>
+                        <span className="text-xs text-gray-500">{loc.duration[lang]}</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => navigate(`/explore/${loc.id}`)}
+                          className="flex-1 py-1.5 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg">
+                          {lang === 'kr' ? '자세히' : lang === 'en' ? 'Details' : 'Дэлгэрэнгүй'}
+                        </button>
+                        <button
+                          onClick={() => toggleItem({ id: loc.id, name: loc.name[lang], lat: loc.lat, lng: loc.lng, province: null })}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                            isSelected(loc.id) ? 'bg-red-50 text-red-500' : 'bg-primary text-white'
+                          }`}
+                        >
+                          {isSelected(loc.id) ? (lang === 'kr' ? '해제' : 'Remove') : (lang === 'kr' ? '+ 선택' : '+ Select')}
+                        </button>
+                      </div>
+                    </div>
+                  </InfoWindow>
+                )}
+              </Marker>
+            ))}
+          </GoogleMap>
+        )}
 
         {/* Legend */}
-        <div className="absolute bottom-8 right-4 bg-white rounded-2xl shadow-lg p-4 z-[400]">
-          <p className="text-xs font-bold text-gray-700 mb-2">범례</p>
+        <div className="absolute bottom-8 right-4 bg-white rounded-2xl shadow-lg p-4 z-10">
+          <p className="text-xs font-bold text-gray-700 mb-2">{lang === 'kr' ? '범례' : lang === 'en' ? 'Legend' : 'Тайлбар'}</p>
           {[
             { cat: 'nature',   label: { kr: '자연',    en: 'Nature',   mn: 'Байгаль' } },
             { cat: 'culture',  label: { kr: '문화',    en: 'Culture',  mn: 'Соёл' } },
@@ -493,19 +504,13 @@ export default function DesktopMap() {
               <span className="text-xs text-gray-600">{label[lang]}</span>
             </div>
           ))}
-          {showProvince && (
-            <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-100">
-              <div className="w-3 h-3 rounded-full bg-violet-500" />
-              <span className="text-xs text-gray-600">{lang === 'kr' ? '아이막 명소' : lang === 'mn' ? 'Аймгийн газрууд' : 'Province Sites'}</span>
-            </div>
-          )}
         </div>
 
         {/* Hint */}
         {selectedItems.length === 0 && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-4 py-2 rounded-full backdrop-blur-sm z-[400] pointer-events-none">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-4 py-2 rounded-full backdrop-blur-sm z-10 pointer-events-none">
             <MapPin size={12} className="inline mr-1.5" />
-            {L_HINT[lang] || L_HINT.en}
+            {lang === 'kr' ? '마커를 클릭해 여러 장소를 선택하세요' : lang === 'en' ? 'Click markers to select locations' : 'Маркер дарж газар сонгоно уу'}
           </div>
         )}
       </div>

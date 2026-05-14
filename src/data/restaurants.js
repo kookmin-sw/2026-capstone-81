@@ -14,6 +14,7 @@ export const restaurants = [
     area: { kr: '수흐바타르 광장 근처', en: 'Near Sukhbaatar Square', mn: 'Сүхбаатарын талбайн ойролцоо' },
     mustTry: { kr: '허르헉, 양고기 스테이크', en: 'Khorkhog, Lamb Steak', mn: 'Хорхог, Хонины стейк' },
     open: '11:00 - 22:00',
+    lat: 47.9188, lng: 106.9176,
   },
   {
     id: 2,
@@ -30,6 +31,7 @@ export const restaurants = [
     area: { kr: '나랑톨 시장 근처', en: 'Near Narantuul Market', mn: 'Нарантуулын зах ойролцоо' },
     mustTry: { kr: '양고기 부즈, 호쇼르', en: 'Mutton Buuz, Khuushuur', mn: 'Хонины бууз, хуушуур' },
     open: '09:00 - 21:00',
+    lat: 47.8992, lng: 106.9301,
   },
   {
     id: 3,
@@ -46,6 +48,7 @@ export const restaurants = [
     area: { kr: '서울 거리', en: 'Seoul Street', mn: 'Сеулийн гудамж' },
     mustTry: { kr: '채소 커리, 수제 주스', en: 'Veggie Curry, Fresh Juice', mn: 'Ногооны карри, шинэ шүүс' },
     open: '10:00 - 21:00',
+    lat: 47.9172, lng: 106.9242,
   },
   {
     id: 4,
@@ -62,6 +65,7 @@ export const restaurants = [
     area: { kr: '칭기즈칸 광장', en: 'Chinggis Square', mn: 'Чингисийн талбай' },
     mustTry: { kr: '몽골 바베큐 플래터', en: 'Mongolian BBQ Platter', mn: 'Монгол BBQ таваг' },
     open: '12:00 - 23:00',
+    lat: 47.9182, lng: 106.9168,
   },
   {
     id: 5,
@@ -78,6 +82,7 @@ export const restaurants = [
     area: { kr: '바가 토이루 거리', en: 'Baga Toiruu Street', mn: 'Бага тойруу' },
     mustTry: { kr: '치킨 티카 마살라, 난', en: 'Chicken Tikka Masala, Naan', mn: 'Чикэн тикка масала, наан' },
     open: '11:00 - 22:30',
+    lat: 47.9127, lng: 106.9105,
   },
   {
     id: 6,
@@ -94,6 +99,7 @@ export const restaurants = [
     area: { kr: '피스 애비뉴', en: 'Peace Avenue', mn: 'Энхтайвны өргөн чөлөө' },
     mustTry: { kr: '파스타, 스테이크 샐러드', en: 'Pasta, Steak Salad', mn: 'Паста, стейк салад' },
     open: '08:00 - 22:00',
+    lat: 47.9062, lng: 106.9235,
   },
   {
     id: 7,
@@ -110,6 +116,7 @@ export const restaurants = [
     area: { kr: '자이산 지구', en: 'Zaisan District', mn: 'Зайсан дүүрэг' },
     mustTry: { kr: '수테차이, 쯔이완', en: 'Suutei Tsai, Tsuivan', mn: 'Сүүтэй цай, цуйван' },
     open: '10:00 - 21:00',
+    lat: 47.8748, lng: 106.9103,
   },
   {
     id: 8,
@@ -126,5 +133,6 @@ export const restaurants = [
     area: { kr: '도심 (UN Street)', en: 'City Center (UN Street)', mn: 'Хот төв (НҮБ-ийн гудамж)' },
     mustTry: { kr: '생맥주, 클래식 버거', en: 'Draft Beer, Classic Burger', mn: 'Шар айраг, клэссик хамбургер' },
     open: '12:00 - 00:00',
+    lat: 47.9197, lng: 106.9148,
   },
 ]

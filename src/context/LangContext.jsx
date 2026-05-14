@@ -3,10 +3,17 @@ import { t } from '../data/translations'
 
 const LangContext = createContext(null)
 
-export function LangProvider({ children }) {
-  const [lang, setLang] = useState('kr')
+function detectLang() {
+  const nav = navigator.language || 'en'
+  if (nav.startsWith('ko')) return 'kr'
+  if (nav.startsWith('mn')) return 'mn'
+  return 'en'
+}
 
-  const tr = (key) => t[lang]?.[key] ?? t['kr'][key] ?? key
+export function LangProvider({ children }) {
+  const [lang, setLang] = useState(detectLang)
+
+  const tr = (key) => t[lang]?.[key] ?? t['en'][key] ?? key
 
   return (
     <LangContext.Provider value={{ lang, setLang, tr }}>

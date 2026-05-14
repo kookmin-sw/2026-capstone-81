@@ -69,7 +69,7 @@ function AIPanel({ onClose }) {
   }
 
   return (
-    <div className="w-72 flex-shrink-0 flex flex-col bg-white border-l border-gray-100 h-screen overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-50 w-80 flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden" style={{ height: '520px' }}>
       {/* 헤더 */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
         <div className="flex items-center gap-2">
@@ -242,13 +242,13 @@ export default function DesktopLayout({ children }) {
           </button>
         </div>
 
-        {/* 콘텐츠 + AI 패널 */}
-        <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            {children}
-          </div>
-          {showAI && <AIPanel onClose={() => setShowAI(false)} />}
+        {/* 콘텐츠 */}
+        <div className="flex-1 overflow-y-auto">
+          {children}
         </div>
+
+        {/* 플로팅 챗봇 팝업 */}
+        {showAI && <AIPanel onClose={() => setShowAI(false)} />}
       </div>
 
     </div>

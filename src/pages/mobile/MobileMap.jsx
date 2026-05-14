@@ -1,86 +1,87 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
-import { MapContainer, TileLayer, Marker } from 'react-leaflet'
-import { Star, MapPin, Clock } from 'lucide-react'
-import MobileLayout from './MobileLayout'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
+import { Star, MapPin, Clock, CalendarDays, ChevronRight, Search, Home, Compass, Sparkles, User, Map as MapIcon } from 'lucide-react'
 
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-})
+const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+const CAT_COLORS = { nature: '#22c55e', culture: '#3b82f6', activity: '#f97316' }
 
-const BG = '#0A3320'
-const CARD = '#123D27'
+const MAP_OPTIONS = {
+  disableDefaultUI: true,
+  zoomControl: false,
+  clickableIcons: false,
+  gestureHandling: 'greedy',
+  styles: [
+    { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  ],
+}
 
 const CATS = [
-  { key: 'all', label: { kr: '전체', en: 'All', mn: 'Бүгд' } },
-  { key: 'nature', label: { kr: '자연', en: 'Nature', mn: 'Байгаль' } },
-  { key: 'culture', label: { kr: '문화', en: 'Culture', mn: 'Соёл' } },
-  { key: 'activity', label: { kr: '음식', en: 'Food', mn: 'Хоол' } },
+  { key: 'all',      label: { kr: '전체',    en: 'All',     mn: 'Бүгд'    } },
+  { key: 'nature',   label: { kr: '자연',    en: 'Nature',  mn: 'Байгаль' } },
+  { key: 'culture',  label: { kr: '문화',    en: 'Culture', mn: 'Соёл'    } },
+  { key: 'activity', label: { kr: '액티비티', en: 'Activity',mn: 'Адал'   } },
 ]
 
-function makeIcon(isSelected) {
-  const color = isSelected ? '#22C55E' : '#4A7A5E'
-  const inner = isSelected ? '#22C55E' : '#6BAD87'
-  const svg = `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="14" cy="14" r="12" fill="${color}" fill-opacity="${isSelected ? 1 : 0.75}"/>
-    <circle cx="14" cy="14" r="6" fill="white" fill-opacity="0.9"/>
-    <circle cx="14" cy="14" r="3" fill="${inner}"/>
+function makeMarker(color, active) {
+  const size = active ? 38 : 28
+  const h = Math.round(size * 1.3)
+  const svg = `<svg width="${size}" height="${h}" viewBox="0 0 36 47" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 0C8.059 0 0 8.059 0 18C0 32 18 47 18 47C18 47 36 32 36 18C36 8.059 27.941 0 18 0Z" fill="${color}"/>
+    <circle cx="18" cy="18" r="10" fill="white"/>
+    <circle cx="18" cy="18" r="6" fill="${color}"/>
   </svg>`
-  return L.divIcon({
-    html: svg,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    className: '',
-  })
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}` }
 }
+
+const tabs = [
+  { icon: Home,     path: '/home',    label: { kr: '홈', en: 'Home', mn: 'Нүүр' } },
+  { icon: Compass,  path: '/explore', label: { kr: '탐색', en: 'Explore', mn: 'Хайлт' } },
+  { icon: MapIcon,  path: '/map',     label: { kr: '지도', en: 'Map', mn: 'Зураг' }, active: true },
+  { icon: Sparkles, path: '/planner', label: { kr: 'AI', en: 'AI', mn: 'AI' } },
+  { icon: User,     path: '/profile', label: { kr: '프로필', en: 'Profile', mn: 'Профайл' } },
+]
 
 export default function MobileMap() {
   const navigate = useNavigate()
   const { lang } = useLang()
+  const mapRef = useRef(null)
   const [filter, setFilter] = useState('all')
-  const [selected, setSelected] = useState(locations.find(l => l.id === 3))
+  const [selected, setSelected] = useState(null)
+
+  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GMAPS_KEY })
 
   const filtered = filter === 'all' ? locations : locations.filter(l => l.category === filter)
 
-  const regionLabel = (loc) => {
-    if (!loc) return ''
-    const map = { terelj: '울란바토르', ub: '울란바토르', gobi: '고비', khuvsgul: '홉스골', kharkhorin: '하르호린' }
-    return map[loc.region] ?? loc.region
-  }
+  const handleMarker = useCallback((loc) => {
+    setSelected(loc)
+    mapRef.current?.panTo({ lat: loc.lat, lng: loc.lng })
+  }, [])
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: BG }}>
+    <div className="flex flex-col h-screen bg-[#F8F9FB]">
 
-      {/* 상단 검색 + 필터 */}
-      <div className="px-4 pt-12 pb-3 flex-shrink-0" style={{ background: BG }}>
-        <div
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-3"
-          style={{ background: CARD }}
-        >
-          <span className="text-[#7DB89A] text-base">🔍</span>
-          <span className="text-[#7DB89A] text-sm">
-            {lang === 'kr' ? '여행지 검색...' : lang === 'en' ? 'Search destinations...' : 'Газар хайх...'}
+      {/* Top filter bar */}
+      <div className="absolute top-0 inset-x-0 z-20 pt-12 px-4 pb-3 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <div className="flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-2.5 mb-3">
+          <Search size={14} className="text-gray-400 flex-shrink-0" />
+          <span className="text-sm text-gray-400">
+            {lang === 'kr' ? '여행지 검색...' : lang === 'en' ? 'Search places...' : 'Газар хайх...'}
           </span>
         </div>
-
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {CATS.map(cat => (
             <button
               key={cat.key}
               onClick={() => setFilter(cat.key)}
-              className="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={
+              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 filter === cat.key
-                  ? { background: '#22C55E', color: '#fff' }
-                  : { background: 'transparent', color: '#7DB89A', border: '1px solid rgba(125,184,154,0.3)' }
-              }
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-500'
+              }`}
             >
               {cat.label[lang]}
             </button>
@@ -88,93 +89,111 @@ export default function MobileMap() {
         </div>
       </div>
 
-      {/* 지도 */}
-      <div className="flex-1 relative overflow-hidden">
-        <MapContainer
-          center={[46.8625, 103.8467]}
-          zoom={5}
-          style={{ height: '100%', width: '100%' }}
-          zoomControl={false}
-        >
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          />
-          {filtered.filter(l => l.lat && l.lng).map(loc => (
-            <Marker
-              key={loc.id}
-              position={[loc.lat, loc.lng]}
-              icon={makeIcon(selected?.id === loc.id)}
-              eventHandlers={{ click: () => setSelected(loc) }}
-            />
-          ))}
-        </MapContainer>
-      </div>
+      {/* Map */}
+      <div className="flex-1 relative">
+        {!isLoaded ? (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <GoogleMap
+            mapContainerStyle={{ width: '100%', height: '100%' }}
+            center={{ lat: 47.5, lng: 103.5 }}
+            zoom={5}
+            options={MAP_OPTIONS}
+            onLoad={map => { mapRef.current = map }}
+            onClick={() => setSelected(null)}
+          >
+            {filtered.map(loc => (
+              <Marker
+                key={loc.id}
+                position={{ lat: loc.lat, lng: loc.lng }}
+                icon={makeMarker(CAT_COLORS[loc.category] || '#2F855A', selected?.id === loc.id)}
+                onClick={() => handleMarker(loc)}
+                zIndex={selected?.id === loc.id ? 10 : 1}
+              />
+            ))}
+          </GoogleMap>
+        )}
 
-      {/* 선택된 장소 카드 */}
-      {selected && (
-        <div
-          className="flex-shrink-0 px-4 pt-4 pb-4 rounded-t-3xl"
-          style={{ background: CARD, boxShadow: '0 -4px 24px rgba(0,0,0,0.3)' }}
-        >
-          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
-          <h3 className="text-white font-black text-base mb-1">{selected.name[lang]}</h3>
-          <p className="text-[#22C55E] text-xs mb-3">
-            🌿 {lang === 'kr' ? '자연 명소' : lang === 'en' ? 'Nature spot' : 'Байгалийн газар'} · {regionLabel(selected)}
-          </p>
-          <div className="flex gap-2">
-            <div
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
-              style={{ background: 'rgba(255,255,255,0.08)' }}
-            >
-              <Star size={11} className="text-yellow-400 fill-yellow-400" />
-              <span className="text-white text-xs font-bold">{selected.rating}</span>
-            </div>
-            <div
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
-              style={{ background: 'rgba(255,255,255,0.08)' }}
-            >
-              <MapPin size={11} className="text-[#7DB89A]" />
-              <span className="text-white text-xs">
-                {selected.region === 'terelj' ? '70km' : selected.region === 'gobi' ? '500km' : '–'}
-              </span>
-            </div>
-            <div
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
-              style={{ background: 'rgba(255,255,255,0.08)' }}
-            >
-              <Clock size={11} className="text-[#7DB89A]" />
-              <span className="text-white text-xs">{selected.duration[lang]}</span>
+        {/* Selected card (bottom sheet) */}
+        {selected && (
+          <div
+            className="absolute inset-x-0 bottom-20 mx-4 bg-white rounded-3xl shadow-2xl overflow-hidden"
+            style={{ boxShadow: '0 -2px 30px rgba(0,0,0,0.12)' }}
+          >
+            <div className="flex gap-3 p-3">
+              <div className="relative w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden">
+                <img src={selected.image} alt={selected.name[lang]} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              </div>
+              <div className="flex-1 min-w-0 py-0.5">
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 text-white`}
+                  style={{ backgroundColor: CAT_COLORS[selected.category] || '#2F855A' }}>
+                  {selected.category === 'nature' ? (lang === 'kr' ? '자연' : lang === 'mn' ? 'Байгаль' : 'Nature')
+                    : selected.category === 'culture' ? (lang === 'kr' ? '문화' : lang === 'mn' ? 'Соёл' : 'Culture')
+                    : (lang === 'kr' ? '액티비티' : lang === 'mn' ? 'Адал явдал' : 'Activity')}
+                </span>
+                <h3 className="font-black text-gray-900 text-sm leading-tight mb-1">{selected.name[lang]}</h3>
+                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                  <span className="flex items-center gap-0.5">
+                    <Star size={10} className="text-yellow-400 fill-yellow-400" />
+                    <span className="font-bold text-gray-700">{selected.rating}</span>
+                  </span>
+                  <span className="text-gray-300">·</span>
+                  <span className="flex items-center gap-0.5">
+                    <Clock size={9} className="text-primary" />
+                    {selected.duration[lang]}
+                  </span>
+                  <span className="text-gray-300">·</span>
+                  <span className="flex items-center gap-0.5">
+                    <CalendarDays size={9} className="text-primary" />
+                    {selected.season[lang]}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate(`/explore/${selected.id}`)}
+                className="self-center w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0"
+              >
+                <ChevronRight size={16} className="text-primary" />
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 하단 탭바 */}
-      <div
-        className="flex-shrink-0 border-t"
-        style={{ background: BG, borderColor: 'rgba(255,255,255,0.08)' }}
-      >
-        <div className="flex items-stretch justify-around">
-          {[
-            { path: '/home', label: { kr: '홈 화면', en: 'Home', mn: 'Нүүр' } },
-            { path: '/explore', label: { kr: '추천 여행지 탐색', en: 'Explore', mn: 'Судлах' } },
-            { path: '/map', label: { kr: '지도 탐색', en: 'Map', mn: 'Газар' }, active: true },
-            { path: '/profile', label: { kr: '내 계정', en: 'My', mn: 'Миний' } },
-          ].map(tab => (
-            <button
-              key={tab.path}
-              onClick={() => navigate(tab.path)}
-              className="flex flex-col items-center justify-center gap-0.5 py-3 flex-1"
-            >
-              <span
-                className="text-[9px] font-semibold leading-tight text-center px-1"
-                style={{ color: tab.active ? '#22C55E' : '#5A8A70' }}
-              >
-                {tab.label[lang]}
-              </span>
-            </button>
-          ))}
+        {/* Hint */}
+        {!selected && isLoaded && (
+          <div className="absolute bottom-24 inset-x-0 flex justify-center pointer-events-none">
+            <div className="bg-black/60 text-white text-xs px-4 py-2 rounded-full backdrop-blur-sm flex items-center gap-1.5">
+              <MapPin size={11} />
+              {lang === 'kr' ? '마커를 탭해 장소를 확인하세요' : lang === 'en' ? 'Tap a marker to see details' : 'Маркер дарж газрыг харна уу'}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom tab bar */}
+      <div className="absolute bottom-0 inset-x-0 z-20">
+        <div className="bg-white/90 backdrop-blur-md border-t border-gray-100">
+          <div className="flex items-center justify-around px-2 pb-safe pt-1 pb-3">
+            {tabs.map(tab => {
+              const Icon = tab.icon
+              const active = tab.active
+              return (
+                <button
+                  key={tab.path}
+                  onClick={() => navigate(tab.path)}
+                  className="flex flex-col items-center gap-0.5 flex-1 py-1"
+                >
+                  <Icon size={22} className={active ? 'text-primary' : 'text-gray-400'} strokeWidth={active ? 2.5 : 1.8} />
+                  <span className={`text-[10px] font-semibold ${active ? 'text-primary' : 'text-gray-400'}`}>
+                    {tab.label[lang]}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>

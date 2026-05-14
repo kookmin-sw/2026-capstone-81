@@ -6,11 +6,14 @@ const ERROR_CODE_MAP = {
   'auth/email-already-in-use': 'auth_error_email_in_use',
   'auth/wrong-password': 'auth_error_wrong_password',
   'auth/user-not-found': 'auth_error_user_not_found',
+  'auth/invalid-credential': 'auth_error_wrong_password',
   'auth/invalid-email': 'auth_error_invalid_email',
   'auth/weak-password': 'auth_error_weak_password',
   'auth/popup-closed-by-user': 'auth_error_popup_closed',
   'auth/network-request-failed': 'auth_error_network',
   'auth/too-many-requests': 'auth_error_too_many_requests',
+  'auth/operation-not-allowed': 'auth_error_generic',
+  'auth/unauthorized-domain': 'auth_error_generic',
 }
 
 /**

@@ -7,9 +7,10 @@ RULES:
 1. Answer ONLY about Mongolia travel topics: attractions, culture, food, weather, visa, transportation, accommodation, costs, safety, and trip planning.
 2. If the user asks something unrelated to Mongolia travel, politely redirect: "저는 몽골 여행 전문 AI입니다. 몽골 여행에 대해 물어보세요! 😊"
 3. Detect the user's language and ALWAYS reply in the same language (Korean, English, or Mongolian).
-4. Be concise and direct. Answer the question in 2-4 short paragraphs max.
+4. STRICT LENGTH RULE: Answer ONLY what was asked. Maximum 3-5 sentences or 3-4 bullet points. No extra context, no background info, no related tips unless asked.
 5. Give specific, actionable information: real place names, approximate costs in USD/KRW/MNT, distances, durations.
-6. Do NOT repeat the question back. Do NOT add unnecessary filler. Get straight to the answer.
+6. Do NOT repeat the question back. Do NOT add unnecessary filler. Do NOT volunteer information beyond the exact question.
+7. If the user asks about one place, answer about THAT ONE PLACE only.
 
 MAP_UPDATE FORMAT (optional):
 When you mention specific visitable locations, append this block at the very end:
@@ -34,7 +35,7 @@ export async function chatWithGemini(history, userMessage) {
       ],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 700,
       },
     }),
   })
@@ -60,20 +61,28 @@ Focus on: ${interestLabels.join(', ')}.${locationHint}
 
 Respond in ${langLabel}.
 
-Return ONLY a valid JSON array (no markdown, no extra text) in this exact format:
-[
-  {
-    "day": 1,
-    "title": "Short day theme title",
-    "activities": [
-      { "time": "09:00", "text": "Detailed activity description" },
-      { "time": "12:00", "text": "Lunch and next activity" },
-      { "time": "15:00", "text": "Afternoon activity" },
-      { "time": "19:00", "text": "Evening plan" }
-    ]
-  }
-]
-Include real Mongolian place names, local tips, and practical advice.`
+Return ONLY a valid JSON object (no markdown, no extra text) in this exact format:
+{
+  "itinerary": [
+    {
+      "day": 1,
+      "title": "Short day theme title (max 8 words)",
+      "activities": [
+        { "time": "09:00", "text": "Activity description (plain text, no markdown asterisks, no ** bold **)" },
+        { "time": "12:00", "text": "Lunch description" },
+        { "time": "15:00", "text": "Afternoon activity" },
+        { "time": "20:00", "text": "Evening plan" }
+      ]
+    }
+  ],
+  "packing": ["item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8"],
+  "tips": ["Local tip 1", "Local tip 2", "Local tip 3"]
+}
+Rules:
+- activity text must be plain text only — NO asterisks, NO markdown, NO ** bold **.
+- packing: list 6-10 essential items specifically for this trip.
+- tips: list 3 practical local tips.
+- Include real Mongolian place names and practical advice.`
 
   const res = await fetch(`${BASE_URL}?key=${API_KEY}`, {
     method: 'POST',
@@ -92,16 +101,24 @@ Include real Mongolian place names, local tips, and practical advice.`
     throw new Error(err?.error?.message || `Gemini error: ${res.status}`)
   }
   const data = await res.json()
-  const text = data.candidates[0].content.parts[0].text
+  const parts = data.candidates[0].content.parts
+  const textParts = parts.filter(p => p.text !== undefined && !p.thought)
+  const text = textParts[textParts.length - 1].text
 
-  // Strip any residual markdown fences and extract the JSON array
   const cleaned = text
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim()
 
-  // Extract the first JSON array found in case the model adds surrounding text
-  const match = cleaned.match(/\[[\s\S]*\]/)
-  if (!match) throw new Error('No JSON array in response')
-  return JSON.parse(match[0])
+  // Try object format first { itinerary, packing, tips }
+  const objMatch = cleaned.match(/\{[\s\S]*\}/)
+  if (objMatch) {
+    const parsed = JSON.parse(objMatch[0])
+    if (parsed.itinerary) return parsed
+    // Legacy: bare array wrapped in object
+  }
+  // Fallback: bare array (legacy format)
+  const arrMatch = cleaned.match(/\[[\s\S]*\]/)
+  if (arrMatch) return { itinerary: JSON.parse(arrMatch[0]), packing: [], tips: [] }
+  throw new Error('No JSON in response')
 }

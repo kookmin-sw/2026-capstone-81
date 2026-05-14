@@ -15,24 +15,10 @@ const navItems = [
   { icon: Settings,     path: '/home',    label: { kr: '설정',      en: 'Settings',   mn: 'Тохиргоо'     } },
 ]
 
-const INTERESTS = [
-  { emoji: '🌿', label: { kr: '자연',     en: 'Nature',    mn: 'Байгаль'    } },
-  { emoji: '🐎', label: { kr: '액티비티', en: 'Adventure', mn: 'Адал явдал' } },
-  { emoji: '🏯', label: { kr: '문화',     en: 'Culture',   mn: 'Соёл'       } },
-  { emoji: '⛺', label: { kr: '게르',     en: 'Ger Camp',  mn: 'Гэр бул'   } },
-  { emoji: '📸', label: { kr: '사진',     en: 'Photo',     mn: 'Фото аялал' } },
-]
-
-const LANGS = [
-  { code: 'kr', label: 'KR' },
-  { code: 'en', label: 'EN' },
-  { code: 'mn', label: 'MN' },
-]
-
 export default function DesktopSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { lang, setLang } = useLang()
+  const { lang } = useLang()
   const { user } = useAuth()
 
   const isActive = path => location.pathname === path
@@ -71,29 +57,6 @@ export default function DesktopSidebar() {
         })}
       </nav>
 
-      {/* 관심사 */}
-      <div className="px-4 py-4 border-t border-gray-100">
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-            {lang === 'kr' ? '내 관심사' : lang === 'en' ? 'My Interests' : 'Таны сонирхол'}
-          </p>
-          <button className="text-xs text-primary font-semibold">
-            {lang === 'kr' ? '편집' : lang === 'en' ? 'Edit' : 'Засах'}
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {INTERESTS.map(int => (
-            <span
-              key={int.label.en}
-              className="flex items-center gap-1 bg-gray-100 hover:bg-primary/10 hover:text-primary text-gray-600 text-xs font-semibold px-2.5 py-1.5 rounded-full cursor-pointer transition-colors"
-            >
-              <span className="text-sm">{int.emoji}</span>
-              {int.label[lang]}
-            </span>
-          ))}
-        </div>
-      </div>
-
       {/* 유저 */}
       {user && (
         <div className="px-4 py-3 border-t border-gray-100">
@@ -109,22 +72,6 @@ export default function DesktopSidebar() {
         </div>
       )}
 
-      {/* 언어 스위처 */}
-      <div className="px-4 pb-4">
-        <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-1">
-          {LANGS.map(({ code, label }) => (
-            <button
-              key={code}
-              onClick={() => setLang(code)}
-              className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${
-                lang === code ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

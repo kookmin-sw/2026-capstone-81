@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { LangProvider } from './context/LangContext'
 import { AuthProvider } from './context/AuthContext'
@@ -39,10 +40,24 @@ import Restaurants from './pages/Restaurants'
 import ExploreDetail from './pages/ExploreDetail'
 
 const FORCE_MODE = import.meta.env.VITE_MODE // 'mobile' | 'desktop' | undefined
-const isMobile = () =>
-  FORCE_MODE === 'mobile' ? true
-  : FORCE_MODE === 'desktop' ? false
-  : window.innerWidth < 768
+
+function detect() {
+  if (FORCE_MODE === 'mobile') return true
+  if (FORCE_MODE === 'desktop') return false
+  // Capacitor native app → always mobile
+  try { if (window.Capacitor?.isNativePlatform?.()) return true } catch {}
+  return window.innerWidth < 768
+}
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(detect)
+  useEffect(() => {
+    const handler = () => setMobile(detect())
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return mobile
+}
 
 function DesktopApp() {
   return (
@@ -98,10 +113,11 @@ function MobileApp() {
 }
 
 export default function App() {
+  const mobile = useIsMobile()
   return (
     <LangProvider>
       <AuthProvider>
-        {isMobile() ? <MobileApp /> : <DesktopApp />}
+        {mobile ? <MobileApp /> : <DesktopApp />}
       </AuthProvider>
     </LangProvider>
   )

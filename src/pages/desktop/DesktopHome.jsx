@@ -1,18 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
-import { restaurants } from '../../data/restaurants'
-import { Search, Star, ArrowRight, MapPin, Flame, Wind, CalendarDays, Clock, Utensils } from 'lucide-react'
+import { Search, Star, ArrowRight, MapPin, Flame, Wind, CalendarDays, Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Droplets, ArrowUp, ArrowDown, Eye } from 'lucide-react'
 
-const CATEGORY_CHIPS = [
-  { emoji: '🌿', label: { kr: '자연',      en: 'Nature',      mn: 'Байгаль'       }, count: 215, filter: 'nature'   },
-  { emoji: '🐎', label: { kr: '액티비티',  en: 'Adventure',   mn: 'Адал явдал'    }, count: 98,  filter: 'activity' },
-  { emoji: '🏯', label: { kr: '문화·역사', en: 'Culture',     mn: 'Соёл, түүх'    }, count: 132, filter: 'culture'  },
-  { emoji: '⛺', label: { kr: '게르 캠프', en: 'Ger Camp',    mn: 'Гэр булд'      }, count: 64,  filter: 'ger'      },
-  { emoji: '📸', label: { kr: '사진 여행', en: 'Photo Trip',  mn: 'Фото аялал'    }, count: 87,  filter: 'photo'    },
-  { emoji: '🌊', label: { kr: '휴양·온천', en: 'Hot Springs', mn: 'Амралт, рашаан'}, count: 53,  filter: 'wellness' },
-]
 
 const CAT_BADGE = {
   nature:   { label: { kr: '자연',    en: 'Nature',   mn: 'Байгаль'    }, bg: 'bg-emerald-500' },
@@ -37,19 +28,66 @@ const SEASONAL = {
   mn: { label: 'Зуны санал (6-8 сар)', tip: 'Монгол тал нутаг, Хөвсгөл нуур зунаа хамгийн гоё. Наадмыг мартаж болохгүй!' },
 }
 
-const WEATHER = {
-  city:   { kr: '울란바토르', en: 'Ulaanbaatar', mn: 'Улаанбаатар' },
-  temp: 18, high: 22, low: 8,
-  icon: '☀️',
-  cond:   { kr: '맑음', en: 'Sunny', mn: 'Цэлмэг' },
-  wind:   { kr: '북서 12km/h', en: 'NW 12 km/h', mn: 'ХХ 12км/ц' },
-  humidity: 35,
-  forecast: [
-    { day: { kr: '화', en: 'Tue', mn: 'Мар' }, icon: '⛅', t: '16°' },
-    { day: { kr: '수', en: 'Wed', mn: 'Лха' }, icon: '🌧️', t: '13°' },
-    { day: { kr: '목', en: 'Thu', mn: 'Пүр' }, icon: '☀️', t: '20°' },
-    { day: { kr: '금', en: 'Fri', mn: 'Баа' }, icon: '⛅', t: '19°' },
-  ],
+function wxIconColor(code) {
+  if (code === 0) return 'text-yellow-300'
+  if (code <= 3) return 'text-blue-200'
+  if (code <= 48) return 'text-gray-300'
+  if (code <= 67) return 'text-blue-300'
+  if (code <= 77) return 'text-sky-100'
+  if (code <= 82) return 'text-blue-300'
+  if (code <= 86) return 'text-sky-100'
+  return 'text-yellow-200'
+}
+
+function WeatherIcon({ code, size = 48 }) {
+  const cls = `${wxIconColor(code)} flex-shrink-0`
+  if (code === 0) return <Sun size={size} className={cls} strokeWidth={1.5} />
+  if (code <= 3) return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <Sun size={size * 0.65} className="text-yellow-300 absolute top-0 right-0" strokeWidth={1.5} />
+      <Cloud size={size * 0.8} className="text-blue-200 absolute bottom-0 left-0" strokeWidth={1.5} />
+    </div>
+  )
+  if (code <= 48) return <Cloud size={size} className={cls} strokeWidth={1.5} />
+  if (code <= 67) return <CloudRain size={size} className={cls} strokeWidth={1.5} />
+  if (code <= 77) return <CloudSnow size={size} className={cls} strokeWidth={1.5} />
+  if (code <= 82) return <CloudRain size={size} className={cls} strokeWidth={1.5} />
+  if (code <= 86) return <CloudSnow size={size} className={cls} strokeWidth={1.5} />
+  return <CloudLightning size={size} className={cls} strokeWidth={1.5} />
+}
+
+function wxCond(code, lang) {
+  const c =
+    code === 0 ? 'clear' : code <= 3 ? 'cloudy' : code <= 48 ? 'fog' :
+    code <= 67 ? 'rain' : code <= 77 ? 'snow' : code <= 82 ? 'showers' : 'storm'
+  return ({
+    clear:   { kr: '맑음',    en: 'Sunny',          mn: 'Цэлмэг'      },
+    cloudy:  { kr: '구름 조금', en: 'Partly Cloudy', mn: 'Үүлтэй'     },
+    fog:     { kr: '안개',    en: 'Foggy',           mn: 'Манантай'    },
+    rain:    { kr: '비',      en: 'Rainy',           mn: 'Бороотой'    },
+    snow:    { kr: '눈',      en: 'Snowy',           mn: 'Цастай'      },
+    showers: { kr: '소나기',  en: 'Showers',         mn: 'Жаахан бороо'},
+    storm:   { kr: '천둥번개', en: 'Thunderstorm',   mn: 'Аянга'       },
+  })[c][lang] ?? 'Sunny'
+}
+
+function wxDayName(dateStr, lang) {
+  const days = {
+    kr: ['일','월','화','수','목','금','토'],
+    en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    mn: ['Ням','Дав','Мяг','Лха','Пүр','Баа','Бям'],
+  }
+  return (days[lang] ?? days.en)[new Date(dateStr).getDay()]
+}
+
+function wxWindDir(deg, lang) {
+  const idx = Math.round(deg / 45) % 8
+  return ([
+    { kr: '북', en: 'N', mn: 'Х' }, { kr: '북동', en: 'NE', mn: 'ХЗ' },
+    { kr: '동', en: 'E', mn: 'З' }, { kr: '남동', en: 'SE', mn: 'ӨЗ' },
+    { kr: '남', en: 'S', mn: 'Ө' }, { kr: '남서', en: 'SW', mn: 'ӨД' },
+    { kr: '서', en: 'W', mn: 'Д' }, { kr: '북서', en: 'NW', mn: 'ХД' },
+  ])[idx][lang] ?? 'N'
 }
 
 const FESTIVAL_HIGHLIGHTS = [
@@ -61,21 +99,45 @@ const FESTIVAL_HIGHLIGHTS = [
   { emoji: '🐎', name: { kr: '유목민 이동 축제', en: 'Nomad Migration', mn: 'Нүүдлийн баяр' }, date: { kr: '5월', en: 'May', mn: '5 сар' }, loc: { kr: '테를지 / 전국', en: 'Terelj / Nationwide', mn: 'Тэрэлж / Улс даяар' }, season: { kr: '봄', en: 'Spring', mn: 'Хавар' }, color: 'from-green-400 to-emerald-500', img: 'https://images.unsplash.com/photo-1535728534313-e206f59bed23?auto=format&fit=crop&w=600&q=80', desc: { kr: '봄 유목민 이동 — 직접 참여 가능한 특별한 체험', en: 'Nomad spring migration — visitors can join the journey', mn: 'Хаврын нүүдэл — зочид оролцож болно' } },
 ]
 
-const CULTURE_HIGHLIGHTS = [
-  { emoji: '🏛️', name: { kr: '카라코룸 & 에르덴 조', en: 'Karakorum & Erdene Zuu', mn: 'Хархорум & Эрдэнэ зуу' }, year: { kr: '13세기', en: '13th Century', mn: '13-р зуун' }, desc: { kr: '몽골 제국 고대 수도. 몽골 최초의 불교 사원 에르덴 조가 인근에 위치합니다.', en: 'Ancient capital of the Mongol Empire. Home to Erdene Zuu, Mongolia\'s first Buddhist monastery.', mn: 'Монголын эзэнт гүрний эртний нийслэл. Монголын анхны Буддын хийд Эрдэнэ зуу энд байдаг.' }, img: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?auto=format&fit=crop&w=600&q=80' },
-  { emoji: '⚔️', name: { kr: '칭기즈칸 기마상', en: 'Chinggis Khan Statue', mn: 'Чингис хааны хөшөө' }, year: { kr: '2008년', en: 'Built 2008', mn: '2008 он' }, desc: { kr: '세계 최대 기마상 (40m). 테를지 인근에 위치하며 내부에 박물관·전망대가 있습니다.', en: 'World\'s largest equestrian statue (40m) near Terelj, with a museum and observation deck inside.', mn: 'Дэлхийн хамгийн том морьт хөшөө (40м). Дотор музей, харвалтын тавцан.' }, img: 'https://images.unsplash.com/photo-1573318012497-a5e98a95fd5f?auto=format&fit=crop&w=600&q=80' },
-  { emoji: '🕌', name: { kr: '간단 사원 (울란바토르)', en: 'Gandan Monastery', mn: 'Гандантэгчинлэн хийд' }, year: { kr: '1838년 설립', en: 'Founded 1838', mn: '1838 он' }, desc: { kr: 'UB 최대 불교 사원. 26.5m 황금 불상이 안치되어 있고 매일 아침 승려 기도 의식을 관람할 수 있습니다.', en: 'UB\'s most important monastery. Houses a 26.5m golden Buddha; daily morning prayer ceremonies.', mn: 'УБ-ын хамгийн чухал хийд. 26.5м алтан Будда хөшөөтэй. Өдөр бүр ламнар залбирна.' }, img: 'https://images.unsplash.com/photo-1585503418537-88331351ad99?auto=format&fit=crop&w=600&q=80' },
-  { emoji: '⛺', name: { kr: '전통 유목 문화', en: 'Nomadic Heritage', mn: 'Нүүдлийн соёл' }, year: { kr: '수천 년의 역사', en: 'Millennia old', mn: 'Мянган жилийн түүх' }, desc: { kr: '게르·마두금·씨름·전통 의상 등 살아있는 유목 문화. 게르 캠프 투숙 체험을 강력 추천합니다.', en: 'Ger homes, Morin Khuur, wrestling, and traditional costumes — living nomadic culture. Stay in a ger camp.', mn: 'Гэр, морин хуур, бөх, уламжлалт хувцас. Гэрт хоноод нүүдэлчдийн амьдралыг мэдрэхийг зөвлөнө.' }, img: 'https://images.unsplash.com/photo-1535728534313-e206f59bed23?auto=format&fit=crop&w=600&q=80' },
-]
-
 
 export default function DesktopHome() {
   const navigate = useNavigate()
   const { lang } = useLang()
-  const [activeCat, setActiveCat] = useState('all')
   const [q, setQ] = useState('')
   const [tripType, setTripType] = useState('')
   const [date, setDate] = useState('')
+  const [weather, setWeather] = useState(null)
+
+  useEffect(() => {
+    fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=47.9077&longitude=106.9230' +
+      '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code' +
+      '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
+      '&timezone=Asia%2FUlaanbaatar&forecast_days=5'
+    )
+      .then(r => r.json())
+      .then(d => {
+        const c = d.current
+        const day = d.daily
+        setWeather({
+          code: c.weather_code,
+          temp: Math.round(c.temperature_2m),
+          high: Math.round(day.temperature_2m_max[0]),
+          low:  Math.round(day.temperature_2m_min[0]),
+          cond: wxCond(c.weather_code, lang),
+          windSpeed: Math.round(c.wind_speed_10m),
+          windDir: wxWindDir(c.wind_direction_10m, lang),
+          humidity: c.relative_humidity_2m,
+          forecast: day.time.slice(1, 5).map((t, i) => ({
+            day: wxDayName(t, lang),
+            code: day.weather_code[i + 1],
+            high: Math.round(day.temperature_2m_max[i + 1]),
+            low: Math.round(day.temperature_2m_min[i + 1]),
+          })),
+        })
+      })
+      .catch(() => {})
+  }, [])
 
   const province = loc => (REGION_LABEL[lang] ?? REGION_LABEL.en)[loc.region] ?? loc.region
 
@@ -149,151 +211,118 @@ export default function DesktopHome() {
         </div>
       </div>
 
-      {/* ── 카테고리 칩 (3D 스타일) ── */}
-      <div className="bg-white border-b border-gray-100 px-8 py-4">
-        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
-          {CATEGORY_CHIPS.map(chip => (
-            <button
-              key={chip.filter}
-              onClick={() => setActiveCat(activeCat === chip.filter ? 'all' : chip.filter)}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-3 flex-shrink-0 transition-all border-2 ${
-                activeCat === chip.filter
-                  ? 'bg-primary border-primary shadow-lg shadow-primary/20'
-                  : 'bg-white border-gray-100 hover:border-primary/30 hover:shadow-md shadow-sm'
-              }`}
-            >
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl shadow-md ${
-                activeCat === chip.filter
-                  ? 'bg-white/20 shadow-white/20'
-                  : 'bg-gradient-to-br from-gray-50 to-gray-100 shadow-gray-200'
-              }`}>
-                {chip.emoji}
-              </div>
-              <div className="text-left">
-                <p className={`text-sm font-bold whitespace-nowrap ${activeCat === chip.filter ? 'text-white' : 'text-gray-800'}`}>
-                  {chip.label[lang]}
-                </p>
-                <p className={`text-xs ${activeCat === chip.filter ? 'text-white/70' : 'text-gray-400'}`}>
-                  {chip.count} {lang === 'mn' ? 'газар' : lang === 'kr' ? '곳' : 'places'}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="px-8 py-6 space-y-8">
 
         {/* ── 날씨 위젯 ── */}
-        <div className="bg-gradient-to-r from-sky-500 to-blue-400 rounded-2xl p-5 text-white">
-          <div className="flex items-center gap-6">
-            {/* 현재 날씨 */}
-            <div className="flex items-center gap-4 flex-1">
-              <span className="text-5xl">{WEATHER.icon}</span>
-              <div>
-                <p className="text-xs font-semibold text-white/70">{WEATHER.city[lang]}</p>
-                <div className="flex items-end gap-2 mt-0.5">
-                  <span className="text-4xl font-black leading-none">{WEATHER.temp}°</span>
-                  <span className="text-sm text-white/80 mb-1">{WEATHER.cond[lang]}</span>
-                </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-white/70">
-                  <span>↑{WEATHER.high}° ↓{WEATHER.low}°</span>
-                  <span className="flex items-center gap-1"><Wind size={11} />{WEATHER.wind[lang]}</span>
-                  <span>💧 {WEATHER.humidity}%</span>
-                </div>
+        <div className="bg-gradient-to-br from-[#0f1f3d] via-[#162d55] to-[#1a3a6b] rounded-3xl overflow-hidden text-white shadow-xl">
+          {!weather ? (
+            <div className="flex items-center gap-6 p-8 animate-pulse">
+              <div className="w-20 h-20 bg-white/10 rounded-2xl" />
+              <div className="space-y-3 flex-1">
+                <div className="w-32 h-10 bg-white/10 rounded-xl" />
+                <div className="w-48 h-5 bg-white/10 rounded-lg" />
+                <div className="w-64 h-4 bg-white/10 rounded-lg" />
+              </div>
+              <div className="flex gap-6">
+                {[0,1,2,3].map(i => <div key={i} className="w-16 h-20 bg-white/10 rounded-xl" />)}
               </div>
             </div>
-            {/* 4일 예보 */}
-            <div className="flex gap-4 border-l border-white/20 pl-6">
-              {WEATHER.forecast.map((d, i) => (
-                <div key={i} className="text-center">
-                  <p className="text-[11px] text-white/60">{d.day[lang]}</p>
-                  <p className="text-xl my-0.5">{d.icon}</p>
-                  <p className="text-sm font-bold">{d.t}</p>
+          ) : (
+            <div className="flex">
+              {/* Left: Current weather */}
+              <div className="flex-1 p-8 pr-6">
+                <div className="flex items-start gap-6">
+                  <WeatherIcon code={weather.code} size={72} />
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-1">
+                      {lang === 'kr' ? '울란바토르, 몽골' : lang === 'mn' ? 'Улаанбаатар, Монгол' : 'Ulaanbaatar, Mongolia'}
+                    </p>
+                    <div className="flex items-end gap-3 leading-none mb-1">
+                      <span className="text-7xl font-black tracking-tight">{weather.temp}°</span>
+                      <span className="text-xl text-white/60 font-medium mb-2">C</span>
+                    </div>
+                    <p className="text-lg font-semibold text-white/80">{weather.cond}</p>
+                  </div>
                 </div>
-              ))}
+
+                {/* Stats row */}
+                <div className="mt-6 flex items-center gap-1">
+                  <div className="flex items-center gap-2 bg-white/8 rounded-xl px-4 py-2.5 flex-1">
+                    <ArrowUp size={14} className="text-red-400" />
+                    <span className="text-sm font-semibold">{weather.high}°</span>
+                    <ArrowDown size={14} className="text-blue-400 ml-1" />
+                    <span className="text-sm font-semibold">{weather.low}°</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/8 rounded-xl px-4 py-2.5 flex-1">
+                    <Wind size={14} className="text-white/50" />
+                    <span className="text-sm font-semibold">{weather.windDir} {weather.windSpeed} km/h</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/8 rounded-xl px-4 py-2.5">
+                    <Droplets size={14} className="text-blue-300" />
+                    <span className="text-sm font-semibold">{weather.humidity}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="w-px bg-white/10 my-6" />
+
+              {/* Right: 4-day forecast */}
+              <div className="flex items-center px-8 gap-6">
+                {weather.forecast.map((d, i) => (
+                  <div key={i} className="flex flex-col items-center gap-3">
+                    <p className="text-xs font-bold text-white/40 uppercase tracking-wide">{d.day}</p>
+                    <WeatherIcon code={d.code} size={28} />
+                    <div className="text-center">
+                      <p className="text-sm font-bold">{d.high}°</p>
+                      <p className="text-xs text-white/40">{d.low}°</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* ── 축제 패널 (액티비티 선택 시) ── */}
-        {activeCat === 'activity' && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-black text-gray-900">
-                  🎉 {lang === 'kr' ? '몽골 축제 일정' : lang === 'en' ? 'Mongolia Festivals' : 'Монголын наадам, баярууд'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {lang === 'kr' ? '계절별 몽골의 특별한 축제들을 만나보세요' : lang === 'en' ? 'Discover Mongolia\'s unique seasonal festivals' : 'Монголын улирлын онцлох баяруудтай танилц'}
-                </p>
-              </div>
-              <button onClick={() => navigate('/explore?cat=activity')} className="flex items-center gap-1 text-primary text-sm font-semibold hover:underline">
-                {lang === 'kr' ? '전체보기' : lang === 'en' ? 'See all' : 'Бүгдийг харах'} <ArrowRight size={14} />
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {FESTIVAL_HIGHLIGHTS.slice(0, 6).map((fest, i) => (
-                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="relative h-36 overflow-hidden">
-                    <img src={fest.img} alt={fest.name[lang]} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    <div className={`absolute top-3 left-3 bg-gradient-to-r ${fest.color} text-white text-[10px] font-bold px-2.5 py-1 rounded-full`}>
-                      {fest.season[lang]}
-                    </div>
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-white font-black text-sm leading-tight">{fest.emoji} {fest.name[lang]}</h3>
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="flex items-center gap-1 text-[10px] text-primary font-semibold bg-primary/10 px-2 py-0.5 rounded-full">
-                        <CalendarDays size={9} />{fest.date[lang]}
-                      </span>
-                      <span className="text-[10px] text-gray-400">{fest.loc[lang]}</span>
-                    </div>
-                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{fest.desc[lang]}</p>
-                  </div>
-                </div>
-              ))}
+        {/* ── 축제 섹션 ── */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-black text-gray-900">
+                🎉 {lang === 'kr' ? '몽골 축제' : lang === 'en' ? 'Mongolia Festivals' : 'Монголын наадам, баярууд'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {lang === 'kr' ? '계절별 몽골의 특별한 축제들을 만나보세요' : lang === 'en' ? 'Discover Mongolia\'s unique seasonal festivals' : 'Монголын улирлын онцлох баяруудтай танилц'}
+              </p>
             </div>
           </div>
-        )}
-
-        {/* ── 문화·역사 패널 (문화 선택 시) ── */}
-        {activeCat === 'culture' && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-black text-gray-900">
-                  🏛️ {lang === 'kr' ? '몽골 문화·역사 하이라이트' : lang === 'en' ? 'Culture & History' : 'Соёл, Түүх'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {lang === 'kr' ? '몽골 제국부터 현대까지 살아있는 역사를 탐험하세요' : lang === 'en' ? 'Explore Mongolia\'s living history from the empire to today' : 'Монголын эзэнт гүрнээс өнөөг хүртэлх амьд түүхийг судлаарай'}
-                </p>
-              </div>
-              <button onClick={() => navigate('/explore?cat=culture')} className="flex items-center gap-1 text-primary text-sm font-semibold hover:underline">
-                {lang === 'kr' ? '전체보기' : lang === 'en' ? 'See all' : 'Бүгдийг харах'} <ArrowRight size={14} />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {CULTURE_HIGHLIGHTS.map((item, i) => (
-                <div key={i} className="flex gap-4 bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="w-40 flex-shrink-0 overflow-hidden">
-                    <img src={item.img} alt={item.name[lang]} className="w-full h-full object-cover" />
+          <div className="grid grid-cols-3 gap-4">
+            {FESTIVAL_HIGHLIGHTS.slice(0, 6).map((fest, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                <div className="relative h-36 overflow-hidden">
+                  <img src={fest.img} alt={fest.name[lang]} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  <div className={`absolute top-3 left-3 bg-gradient-to-r ${fest.color} text-white text-[10px] font-bold px-2.5 py-1 rounded-full`}>
+                    {fest.season[lang]}
                   </div>
-                  <div className="p-4 flex-1">
-                    <span className="inline-block bg-blue-50 text-blue-600 text-[10px] font-bold px-2.5 py-1 rounded-full mb-2">
-                      {item.year[lang]}
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <h3 className="text-white font-black text-sm leading-tight">{fest.emoji} {fest.name[lang]}</h3>
+                  </div>
+                </div>
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="flex items-center gap-1 text-[10px] text-primary font-semibold bg-primary/10 px-2 py-0.5 rounded-full">
+                      <CalendarDays size={9} />{fest.date[lang]}
                     </span>
-                    <h3 className="font-black text-gray-900 text-sm mb-1.5 leading-tight">{item.emoji} {item.name[lang]}</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{item.desc[lang]}</p>
+                    <span className="text-[10px] text-gray-400">{fest.loc[lang]}</span>
                   </div>
+                  <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{fest.desc[lang]}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* ── AI Planner CTA ── */}
         <div
@@ -331,7 +360,7 @@ export default function DesktopHome() {
           </div>
 
           <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-1">
-            {locations.filter(loc => activeCat === 'all' || loc.category === activeCat).slice(0, 6).map(loc => {
+            {locations.slice(0, 6).map(loc => {
               const badge = CAT_BADGE[loc.category] ?? CAT_BADGE.nature
               const dist = MOCK_DIST[loc.id]
               const reviews = MOCK_REVIEWS[loc.id] ?? 0

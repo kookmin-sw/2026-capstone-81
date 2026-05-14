@@ -2,7 +2,21 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { generatePlanWithGemini } from '../../utils/gemini'
-import { Sparkles, Clock, Heart, MapPin, X } from 'lucide-react'
+import { Sparkles, Clock, Heart, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon } from 'lucide-react'
+
+function timeIcon(time) {
+  const h = parseInt(time?.split(':')[0] ?? '9', 10)
+  if (h < 12) return <Sunrise size={14} className="text-amber-400" />
+  if (h < 18) return <Sun size={14} className="text-orange-400" />
+  return <Moon size={14} className="text-indigo-400" />
+}
+
+function timeBg(time) {
+  const h = parseInt(time?.split(':')[0] ?? '9', 10)
+  if (h < 12) return 'bg-amber-50 text-amber-600 border-amber-200'
+  if (h < 18) return 'bg-orange-50 text-orange-600 border-orange-200'
+  return 'bg-indigo-50 text-indigo-600 border-indigo-200'
+}
 
 const interestKeys = ['int_nature', 'int_culture', 'int_food', 'int_adventure', 'int_photo', 'int_history']
 const interestEmojis = {
@@ -50,7 +64,7 @@ export default function DesktopPlanner() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-navy via-primary-dark to-primary py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
@@ -161,27 +175,101 @@ export default function DesktopPlanner() {
 
             {result && (
               <div className="space-y-4">
-                <h2 className="text-lg font-black text-gray-900">
-                  🗓️ {days}{tr('planner_days_unit')} {tr('custom_itinerary')}
-                </h2>
-                {result.map(day => (
-                  <div key={day.day} className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white text-sm font-black flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-black text-gray-900">
+                    🗓️ {days}{tr('planner_days_unit')} {tr('custom_itinerary')}
+                  </h2>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                    {result.itinerary?.length ?? 0} {lang === 'kr' ? '일' : lang === 'mn' ? 'өдөр' : 'days'}
+                  </span>
+                </div>
+
+                {/* Day cards */}
+                {(result.itinerary ?? []).map(day => (
+                  <div key={day.day} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    {/* Day header */}
+                    <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-primary/8 to-transparent border-b border-gray-100">
+                      <span className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white text-sm font-black flex items-center justify-center flex-shrink-0 shadow-md shadow-primary/20">
                         {day.day}
                       </span>
-                      <span className="font-black text-gray-900">{day.title}</span>
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                          {lang === 'kr' ? `${day.day}일차` : lang === 'mn' ? `${day.day} өдөр` : `Day ${day.day}`}
+                        </p>
+                        <p className="font-black text-gray-900 text-sm leading-tight">{day.title}</p>
+                      </div>
                     </div>
-                    <div className="space-y-2.5 pl-1">
+
+                    {/* Activities timeline */}
+                    <div className="px-5 py-4 space-y-0">
                       {day.activities.map((act, i) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <span className="text-xs text-primary font-bold bg-primary/8 px-2 py-0.5 rounded mt-0.5 flex-shrink-0">{act.time}</span>
-                          <span className="text-sm text-gray-600 leading-relaxed">{act.text}</span>
+                        <div key={i} className="flex gap-4 relative">
+                          {/* Timeline line */}
+                          {i < day.activities.length - 1 && (
+                            <div className="absolute left-[22px] top-10 bottom-0 w-px bg-gray-100" />
+                          )}
+                          {/* Time + icon column */}
+                          <div className="flex flex-col items-center gap-1.5 flex-shrink-0 w-11">
+                            <div className={`w-9 h-9 rounded-full border flex items-center justify-center flex-shrink-0 bg-white ${timeBg(act.time)}`}>
+                              {timeIcon(act.time)}
+                            </div>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${timeBg(act.time)}`}>
+                              {act.time}
+                            </span>
+                          </div>
+                          {/* Activity text */}
+                          <div className={`flex-1 ${i < day.activities.length - 1 ? 'pb-5' : 'pb-1'}`}>
+                            <p className="text-sm text-gray-700 leading-relaxed pt-1.5">
+                              {act.text.replace(/\*\*/g, '')}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 ))}
+
+                {/* Packing list */}
+                {result.packing && result.packing.length > 0 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center">
+                        <Backpack size={16} className="text-emerald-600" />
+                      </div>
+                      <h3 className="font-black text-gray-900 text-sm">
+                        {lang === 'kr' ? '준비물 체크리스트' : lang === 'mn' ? 'Бэлтгэх зүйлс' : 'Packing Checklist'}
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {result.packing.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
+                          <span className="w-4 h-4 rounded-full border-2 border-emerald-400 flex-shrink-0" />
+                          <span className="text-xs text-gray-700 font-medium leading-tight">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tips */}
+                {result.tips && result.tips.length > 0 && (
+                  <div className="bg-amber-50 rounded-2xl border border-amber-100 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Lightbulb size={16} className="text-amber-500" />
+                      <h3 className="font-black text-gray-900 text-sm">
+                        {lang === 'kr' ? '현지 꿀팁' : lang === 'mn' ? 'Орон нутгийн зөвлөмж' : 'Local Tips'}
+                      </h3>
+                    </div>
+                    <div className="space-y-2">
+                      {result.tips.map((tip, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-amber-800 leading-relaxed">
+                          <span className="text-amber-400 font-black mt-0.5">✦</span>
+                          <span>{tip.replace(/\*\*/g, '')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

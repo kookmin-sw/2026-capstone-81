@@ -1,11 +1,68 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
 import { locations } from '../../data/locations'
-import { Search, Bell, SlidersHorizontal, Star, MapPin, Navigation, ChevronRight } from 'lucide-react'
+import { Search, Bell, SlidersHorizontal, Star, MapPin, Navigation, ChevronRight, Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Droplets, Wind, ArrowUp, ArrowDown } from 'lucide-react'
 import { NomadLogoIcon, NomadLogoText } from '../../components/NomadLogo'
 import MobileLayout from './MobileLayout'
+
+const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+const CAT_COLORS = { nature: '#22c55e', culture: '#3b82f6', activity: '#f97316' }
+
+const MINI_MAP_OPTIONS = {
+  disableDefaultUI: true,
+  gestureHandling: 'none',
+  clickableIcons: false,
+  zoomControl: false,
+  styles: [
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+    { featureType: 'road', elementType: 'labels', stylers: [{ visibility: 'simplified' }] },
+  ],
+}
+
+function makeMiniMarker(color) {
+  const svg = `<svg width="20" height="25" viewBox="0 0 36 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 0C8.059 0 0 8.059 0 18C0 31.5 18 45 18 45C18 45 36 31.5 36 18C36 8.059 27.941 0 18 0Z" fill="${color}"/>
+    <circle cx="18" cy="18" r="9" fill="white"/>
+  </svg>`
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}` }
+}
+
+function wxCondMobile(code, lang) {
+  const c = code === 0 ? 'clear' : code <= 3 ? 'cloudy' : code <= 48 ? 'fog' :
+    code <= 67 ? 'rain' : code <= 77 ? 'snow' : code <= 82 ? 'showers' : 'storm'
+  return ({ clear: { kr: '맑음', en: 'Sunny', mn: 'Цэлмэг' }, cloudy: { kr: '구름', en: 'Cloudy', mn: 'Үүлтэй' },
+    fog: { kr: '안개', en: 'Foggy', mn: 'Манантай' }, rain: { kr: '비', en: 'Rainy', mn: 'Бороотой' },
+    snow: { kr: '눈', en: 'Snowy', mn: 'Цастай' }, showers: { kr: '소나기', en: 'Showers', mn: 'Бороо' },
+    storm: { kr: '천둥', en: 'Storm', mn: 'Аянга' } })[c]?.[lang] ?? 'Sunny'
+}
+
+function wxDayMobile(dateStr, lang) {
+  const d = { kr: ['일','월','화','수','목','금','토'], en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], mn: ['Ням','Дав','Мяг','Лха','Пүр','Баа','Бям'] }
+  return (d[lang] ?? d.en)[new Date(dateStr).getDay()]
+}
+
+function wxWindDirMobile(deg, lang) {
+  const idx = Math.round(deg / 45) % 8
+  return ([{ kr:'북',en:'N',mn:'Х'},{kr:'북동',en:'NE',mn:'ХЗ'},{kr:'동',en:'E',mn:'З'},{kr:'남동',en:'SE',mn:'ӨЗ'},
+    {kr:'남',en:'S',mn:'Ө'},{kr:'남서',en:'SW',mn:'ӨД'},{kr:'서',en:'W',mn:'Д'},{kr:'북서',en:'NW',mn:'ХД'}])[idx]?.[lang] ?? 'N'
+}
+
+function WxIcon({ code, size = 32 }) {
+  const yellow = 'text-yellow-300', blue = 'text-blue-200', gray = 'text-gray-300', rain = 'text-blue-300', snow = 'text-sky-100'
+  const s = { size, strokeWidth: 1.5 }
+  if (code === 0) return <Sun {...s} className={yellow} />
+  if (code <= 3) return <Cloud {...s} className={blue} />
+  if (code <= 48) return <Cloud {...s} className={gray} />
+  if (code <= 67) return <CloudRain {...s} className={rain} />
+  if (code <= 77) return <CloudSnow {...s} className={snow} />
+  if (code <= 82) return <CloudRain {...s} className={rain} />
+  if (code <= 86) return <CloudSnow {...s} className={snow} />
+  return <CloudLightning {...s} className="text-yellow-200" />
+}
 
 const FILTER_CHIPS = [
   { key: 'all',      label: { kr: '전체',    en: 'All',      mn: 'Бүгд'      } },
@@ -30,16 +87,6 @@ const REGION_LABEL = {
 const MOCK_DIST    = { 1: 0,   2: 540, 3: 55, 4: 646, 5: 460, 6: 10, 7: 360, 8: 400 }
 const MOCK_REVIEWS = { 1: 186, 2: 342, 3: 278, 4: 210, 5: 182, 6: 94, 7: 164, 8: 128 }
 
-const MAP_PINS = [
-  { x: '18%', y: '25%', n: 12, c: 'bg-primary'      },
-  { x: '52%', y: '40%', n: 8,  c: 'bg-primary'      },
-  { x: '35%', y: '62%', n: 3,  c: 'bg-orange-400'   },
-  { x: '70%', y: '20%', n: 5,  c: 'bg-blue-500'     },
-  { x: '45%', y: '78%', n: 2,  c: 'bg-primary'      },
-  { x: '80%', y: '58%', n: 4,  c: 'bg-purple-500'   },
-  { x: '60%', y: '55%', n: 6,  c: 'bg-primary'      },
-  { x: '25%', y: '48%', n: 1,  c: 'bg-orange-400'   },
-]
 
 export default function MobileHome() {
   const navigate = useNavigate()
@@ -47,6 +94,35 @@ export default function MobileHome() {
   const { user } = useAuth()
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
+  const [weather, setWeather] = useState(null)
+
+  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GMAPS_KEY })
+
+  useEffect(() => {
+    fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=47.9077&longitude=106.9230' +
+      '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code' +
+      '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
+      '&timezone=Asia%2FUlaanbaatar&forecast_days=5'
+    ).then(r => r.json()).then(d => {
+      const c = d.current, day = d.daily
+      setWeather({
+        code: c.weather_code,
+        temp: Math.round(c.temperature_2m),
+        high: Math.round(day.temperature_2m_max[0]),
+        low: Math.round(day.temperature_2m_min[0]),
+        cond: wxCondMobile(c.weather_code, lang),
+        windDir: wxWindDirMobile(c.wind_direction_10m, lang),
+        windSpeed: Math.round(c.wind_speed_10m),
+        humidity: c.relative_humidity_2m,
+        forecast: day.time.slice(1, 5).map((t, i) => ({
+          day: wxDayMobile(t, lang),
+          code: day.weather_code[i + 1],
+          high: Math.round(day.temperature_2m_max[i + 1]),
+        })),
+      })
+    }).catch(() => {})
+  }, [])
 
   const province = loc => (REGION_LABEL[lang] ?? REGION_LABEL.en)[loc.region] ?? loc.region
 
@@ -140,72 +216,95 @@ export default function MobileHome() {
           </div>
         </div>
 
-        {/* ── 미니 맵 ── */}
-        <div className="mx-4 mt-4 rounded-2xl overflow-hidden shadow-sm bg-white">
-          <div
-            className="relative cursor-pointer"
-            style={{ height: 185 }}
-            onClick={() => navigate('/map')}
-          >
-            <div className="w-full h-full bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 relative">
-              {MAP_PINS.map((p, i) => (
-                <div key={i} style={{ left: p.x, top: p.y }} className="absolute -translate-x-1/2 -translate-y-1/2">
-                  <div className={`${p.n >= 8 ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-[9px]'} ${p.c} rounded-full flex items-center justify-center text-white font-bold shadow-md border-2 border-white`}>
-                    {p.n}
-                  </div>
-                </div>
-              ))}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400/40 font-semibold text-xs pointer-events-none">
-                Монгол
+        {/* ── 미니 맵 (Google Maps) ── */}
+        <div className="mx-4 mt-4 rounded-2xl overflow-hidden shadow-md" style={{ height: 190 }}>
+          {!isLoaded ? (
+            <div className="w-full h-full bg-emerald-50 animate-pulse flex items-center justify-center">
+              <MapPin size={24} className="text-primary/30" />
+            </div>
+          ) : (
+            <div className="relative w-full h-full">
+              <GoogleMap
+                mapContainerStyle={{ width: '100%', height: '100%' }}
+                center={{ lat: 47.5, lng: 103.5 }}
+                zoom={4}
+                options={MINI_MAP_OPTIONS}
+              >
+                {locations.slice(0, 8).map(loc => (
+                  <Marker
+                    key={loc.id}
+                    position={{ lat: loc.lat, lng: loc.lng }}
+                    icon={makeMiniMarker(CAT_COLORS[loc.category] || '#2F855A')}
+                  />
+                ))}
+              </GoogleMap>
+              {/* Tap overlay → full map */}
+              <div
+                className="absolute inset-0 cursor-pointer"
+                onClick={() => navigate('/map')}
+              />
+              {/* Bottom label */}
+              <div className="absolute bottom-0 inset-x-0 bg-white/90 backdrop-blur-sm border-t border-gray-100 py-2.5 px-4 flex items-center justify-between pointer-events-none">
+                <span className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                  <MapPin size={11} className="text-primary" />
+                  {lang === 'mn' ? 'Газрын зурагийг харах' : lang === 'kr' ? '지도 탐색하기' : 'Explore Map'}
+                </span>
+                <ChevronRight size={14} className="text-gray-400" />
               </div>
-              <button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
-                <Navigation size={14} className="text-primary" />
-              </button>
             </div>
-            <div className="absolute bottom-0 inset-x-0 bg-white/95 border-t border-gray-100 py-2.5 px-4 flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-                <MapPin size={11} className="text-primary" />
-                {lang === 'mn' ? 'Ойролцоох газрууд' : lang === 'kr' ? '주변 여행지' : 'Nearby places'}
-              </span>
-              <ChevronRight size={14} className="text-gray-400" />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* ── 날씨 위젯 ── */}
         <div className="mx-4 mt-4">
-          <div className="bg-gradient-to-r from-sky-500 to-blue-400 rounded-2xl p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-white/70">
-                  {lang === 'mn' ? 'Улаанбаатар' : lang === 'kr' ? '울란바토르' : 'Ulaanbaatar'}
-                </p>
-                <div className="flex items-end gap-2 mt-1">
-                  <span className="text-4xl font-black">18°</span>
-                  <span className="text-sm text-white/80 mb-1.5">
-                    {lang === 'mn' ? 'Цэлмэг' : lang === 'kr' ? '맑음' : 'Sunny'}
-                  </span>
+          <div className="bg-gradient-to-br from-[#0f1f3d] via-[#162d55] to-[#1a3a6b] rounded-2xl overflow-hidden text-white shadow-lg">
+            {!weather ? (
+              <div className="p-4 animate-pulse flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/10 rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="w-20 h-7 bg-white/10 rounded-lg" />
+                  <div className="w-32 h-4 bg-white/10 rounded-lg" />
                 </div>
-                <p className="text-xs text-white/70 mt-1">
-                  {lang === 'mn' ? 'Аялахад тохиромжтой цаг' : lang === 'kr' ? '여행하기 좋은 날씨' : 'Great weather for travel'}
-                </p>
               </div>
-              <div className="text-5xl">☀️</div>
-            </div>
-            <div className="flex gap-3 mt-3 pt-3 border-t border-white/20">
-              {[
-                { day: lang === 'mn' ? 'Мар' : lang === 'kr' ? '화' : 'Tue', temp: '16°', icon: '⛅' },
-                { day: lang === 'mn' ? 'Лха' : lang === 'kr' ? '수' : 'Wed', temp: '13°', icon: '🌧️' },
-                { day: lang === 'mn' ? 'Пүр' : lang === 'kr' ? '목' : 'Thu', temp: '20°', icon: '☀️' },
-                { day: lang === 'mn' ? 'Баа' : lang === 'kr' ? '금' : 'Fri', temp: '19°', icon: '⛅' },
-              ].map((d, i) => (
-                <div key={i} className="flex-1 text-center">
-                  <p className="text-[10px] text-white/60">{d.day}</p>
-                  <p className="text-sm">{d.icon}</p>
-                  <p className="text-xs font-bold">{d.temp}</p>
+            ) : (
+              <>
+                <div className="flex items-center gap-4 p-4 pb-3">
+                  <WxIcon code={weather.code} size={52} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">
+                      {lang === 'mn' ? 'Улаанбаатар' : lang === 'kr' ? '울란바토르' : 'Ulaanbaatar'}
+                    </p>
+                    <div className="flex items-end gap-2 leading-none">
+                      <span className="text-5xl font-black tracking-tight">{weather.temp}°</span>
+                      <span className="text-sm text-white/60 mb-1">C</span>
+                    </div>
+                    <p className="text-sm font-semibold text-white/80 mt-0.5">{weather.cond}</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-right flex-shrink-0">
+                    <span className="flex items-center justify-end gap-1 text-xs text-white/60">
+                      <ArrowUp size={10} className="text-red-400" />{weather.high}°
+                      <ArrowDown size={10} className="text-blue-400 ml-1" />{weather.low}°
+                    </span>
+                    <span className="flex items-center justify-end gap-1 text-xs text-white/50">
+                      <Wind size={10} />{weather.windDir} {weather.windSpeed}
+                    </span>
+                    <span className="flex items-center justify-end gap-1 text-xs text-white/50">
+                      <Droplets size={10} className="text-blue-300" />{weather.humidity}%
+                    </span>
+                  </div>
                 </div>
-              ))}
-            </div>
+                {/* Forecast */}
+                <div className="flex border-t border-white/10 divide-x divide-white/10">
+                  {weather.forecast.map((d, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center py-3 gap-1.5">
+                      <p className="text-[10px] text-white/40 font-bold uppercase">{d.day}</p>
+                      <WxIcon code={d.code} size={18} />
+                      <p className="text-xs font-bold">{d.high}°</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
