@@ -104,8 +104,6 @@ export default function DesktopHome() {
   const navigate = useNavigate()
   const { lang } = useLang()
   const [q, setQ] = useState('')
-  const [tripType, setTripType] = useState('')
-  const [date, setDate] = useState('')
   const [weather, setWeather] = useState(null)
 
   useEffect(() => {
@@ -178,29 +176,6 @@ export default function DesktopHome() {
                 className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
               />
             </div>
-            <div className="w-px h-8 bg-gray-200" />
-            <select
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className="text-sm text-gray-500 outline-none cursor-pointer bg-transparent px-4 py-3.5"
-            >
-              <option value="">{lang === 'kr' ? '언제?' : lang === 'en' ? 'When?' : 'Хэзээ?'}</option>
-              <option>{lang === 'kr' ? '6월' : lang === 'en' ? 'June' : '6 сар'}</option>
-              <option>{lang === 'kr' ? '7월' : lang === 'en' ? 'July' : '7 сар'}</option>
-              <option>{lang === 'kr' ? '8월' : lang === 'en' ? 'August' : '8 сар'}</option>
-              <option>{lang === 'kr' ? '9월' : lang === 'en' ? 'September' : '9 сар'}</option>
-            </select>
-            <div className="w-px h-8 bg-gray-200" />
-            <select
-              value={tripType}
-              onChange={e => setTripType(e.target.value)}
-              className="text-sm text-gray-500 outline-none cursor-pointer bg-transparent px-4 py-3.5"
-            >
-              <option value="">{lang === 'kr' ? '여행 유형' : lang === 'en' ? 'Trip Type' : 'Аяллын төрөл'}</option>
-              <option>{lang === 'kr' ? '자연 탐방' : lang === 'en' ? 'Nature' : 'Байгаль'}</option>
-              <option>{lang === 'kr' ? '문화 여행' : lang === 'en' ? 'Culture' : 'Соёл'}</option>
-              <option>{lang === 'kr' ? '액티비티' : lang === 'en' ? 'Activity' : 'Адал явдал'}</option>
-            </select>
             <button
               onClick={() => navigate(q.trim() ? `/explore?q=${encodeURIComponent(q)}` : '/explore')}
               className="bg-primary text-white px-6 py-3.5 text-sm font-bold flex-shrink-0 hover:bg-primary/90 transition-colors"
