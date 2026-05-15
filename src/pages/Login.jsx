@@ -28,14 +28,20 @@ export default function Login() {
       if (isSignUp) await signup(email, password)
       else await login(email, password)
       navigate('/home')
-    } catch (err) { setError(getAuthErrorMessage(err.code, lang, tr)) }
+    } catch (err) {
+      console.error('[Login] login failed:', err)
+      setError(getAuthErrorMessage(err.code, lang, tr) + (err.code ? ` (${err.code})` : ''))
+    }
     finally { setLoading(false) }
   }
 
   const handleGoogle = async () => {
     setError(''); setSuccessMsg('')
     try { setLoading(true); await loginWithGoogle(); navigate('/home') }
-    catch (err) { setError(getAuthErrorMessage(err.code, lang, tr)) }
+    catch (err) {
+      console.error('[Login] google login failed:', err)
+      setError(getAuthErrorMessage(err.code, lang, tr) + (err.code ? ` (${err.code})` : ''))
+    }
     finally { setLoading(false) }
   }
 
@@ -43,7 +49,10 @@ export default function Login() {
     setError(''); setSuccessMsg('')
     if (!email.trim()) { setError(tr('auth_enter_email')); return }
     try { setLoading(true); await resetPassword(email); setSuccessMsg(tr('auth_reset_email_sent')) }
-    catch (err) { setError(getAuthErrorMessage(err.code, lang, tr)) }
+    catch (err) {
+      console.error('[Login] reset password failed:', err)
+      setError(getAuthErrorMessage(err.code, lang, tr) + (err.code ? ` (${err.code})` : ''))
+    }
     finally { setLoading(false) }
   }
 

@@ -2,13 +2,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { updateProfile } from 'firebase/auth'
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
-import { db, storage } from '../../firebase'
+import { db } from '../../firebase'
 import {
   User, MapPin, BookOpen, Heart, Settings, Globe, LogOut,
-  ChevronRight, Sparkles, Map, Camera, Edit2, Check, X
+  ChevronRight, Sparkles, Map, Edit2, Check, X
 } from 'lucide-react'
 
 const LANGS = [
@@ -124,12 +123,11 @@ export default function DesktopProfile() {
   const [displayName, setDisplayName] = useState('')
   const [nickname, setNickname] = useState('')
   const [photoPreview, setPhotoPreview] = useState(null)
-  const [photoFile, setPhotoFile] = useState(null)
+  const [photoUrl, setPhotoUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [savedCount, setSavedCount] = useState(0)
   const [weather, setWeather] = useState(null)
-  const fileInputRef = useRef(null)
 
   useEffect(() => {
     fetch('https://api.open-meteo.com/v1/forecast?latitude=47.9077&longitude=106.8832&daily=temperature_2m_max,temperature_2m_min,weathercode&current=temperature_2m,weathercode&timezone=Asia%2FUlaanbaatar&forecast_days=7')
@@ -140,6 +138,7 @@ export default function DesktopProfile() {
     if (!user) return
     setDisplayName(user.displayName || '')
     setPhotoPreview(user.photoURL || null)
+    setPhotoUrl(user.photoURL || '')
     if (!db) return
     getDoc(doc(db, 'users', user.uid))
       .then(snap => { if (snap.exists()) setNickname(snap.data().nickname || '') })
@@ -149,25 +148,12 @@ export default function DesktopProfile() {
       .catch(() => {})
   }, [user])
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    setPhotoFile(file)
-    setPhotoPreview(URL.createObjectURL(file))
-  }
-
   const handleSave = async () => {
     if (!user) return
     setSaving(true)
     setSaveError('')
     try {
-      let photoURL = user.photoURL
-
-      if (photoFile && storage) {
-        const storageRef = ref(storage, `profile-photos/${user.uid}`)
-        await uploadBytes(storageRef, photoFile)
-        photoURL = await getDownloadURL(storageRef)
-      }
+      const photoURL = photoUrl.trim() || user.photoURL || null
 
       await updateProfile(user, { displayName: displayName.trim(), photoURL })
 
@@ -179,7 +165,7 @@ export default function DesktopProfile() {
         )
       }
 
-      setPhotoFile(null)
+      setPhotoPreview(photoURL)
       setIsEditing(false)
     } catch (err) {
       console.error('Profile update failed:', err)
@@ -192,6 +178,7 @@ export default function DesktopProfile() {
   const handleCancel = () => {
     setDisplayName(user?.displayName || '')
     setPhotoPreview(user?.photoURL || null)
+    setPhotoUrl(user?.photoURL || '')
     setPhotoFile(null)
     setSaveError('')
     setIsEditing(false)
@@ -234,24 +221,9 @@ export default function DesktopProfile() {
                   : <User size={36} className="text-white" />
                 }
               </div>
-              {isEditing && (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
-                >
-                  <Camera size={14} className="text-gray-700" />
-                </button>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
             </div>
 
-            {/* 이름 / 닉네임 */}
+            {/* 이름 / 닉네임 / 사진 URL */}
             <div className="flex-1 min-w-0">
               {isEditing ? (
                 <div className="space-y-2">
@@ -272,6 +244,16 @@ export default function DesktopProfile() {
                       value={nickname}
                       onChange={e => setNickname(e.target.value)}
                       placeholder="닉네임을 입력하세요"
+                      className="w-full bg-white/20 border border-white/30 text-white placeholder-white/40 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-white/60"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-white/60 text-xs mb-1 block">프로필 사진 URL</label>
+                    <input
+                      type="url"
+                      value={photoUrl}
+                      onChange={e => { setPhotoUrl(e.target.value); setPhotoPreview(e.target.value || null) }}
+                      placeholder="https://..."
                       className="w-full bg-white/20 border border-white/30 text-white placeholder-white/40 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-white/60"
                     />
                   </div>
