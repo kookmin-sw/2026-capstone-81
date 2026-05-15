@@ -26,8 +26,11 @@ app.post('/api/chat', validateChat, async (req, res, next) => {
 
 app.post('/api/plan', validatePlan, async (req, res, next) => {
   try {
-    const { days, interests, language, locations, startDate, departureCity } = req.body
-    const plan = await generateTravelPlan(days, interests, language, locations, startDate, departureCity)
+    const { days, interests, language, locations, startDate, departureCity,
+            budget, pace, groupType, accommodation } = req.body
+    const plan = await generateTravelPlan(days, interests, language, {
+      locations, startDate, departureCity, budget, pace, groupType, accommodation,
+    })
     res.json({ plan })
   } catch (err) {
     next(err)

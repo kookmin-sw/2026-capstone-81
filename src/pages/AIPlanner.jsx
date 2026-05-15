@@ -83,7 +83,8 @@ export default function AIPlanner() {
         langLabels[lang] || 'Korean'
       )
       setResult(plan)
-      if (plan.length) setOpenDay(1)
+      const days = plan?.itinerary?.length ?? plan?.length ?? 0
+      if (days) setOpenDay(1)
     } catch {
       setGenError(lang === 'kr' ? '일정 생성에 실패했습니다. 다시 시도해주세요.' : 'Failed to generate. Please try again.')
     } finally {

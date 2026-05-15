@@ -19,11 +19,15 @@ export async function chatWithAI(history, userMessage) {
   return data.reply
 }
 
-export async function generatePlanWithAI(days, interestLabels, langLabel, focusLocations = null, startDate = null, departureCity = null) {
+export async function generatePlanWithAI(days, interestLabels, langLabel, focusLocations = null, startDate = null, departureCity = null, extra = {}) {
   const body = { days, interests: interestLabels, language: langLabel }
   if (focusLocations?.length) body.locations = focusLocations
   if (startDate) body.startDate = startDate
   if (departureCity) body.departureCity = departureCity
+  if (extra.budget) body.budget = extra.budget
+  if (extra.pace) body.pace = extra.pace
+  if (extra.groupType) body.groupType = extra.groupType
+  if (extra.accommodation) body.accommodation = extra.accommodation
   const data = await post('/api/plan', body)
   return data.plan
 }

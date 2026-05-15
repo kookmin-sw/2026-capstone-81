@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useLang } from '../../context/LangContext'
 import { generatePlanWithAI } from '../../utils/api'
-import { Sparkles, Heart, Backpack, Lightbulb, Sunrise, Sun, Moon, Loader } from 'lucide-react'
+import { Sparkles, Heart, Backpack, Lightbulb, Sunrise, Sun, Moon, Loader,
+  Wallet, Gauge, Users, Bed, Calendar, MapPin } from 'lucide-react'
 import MobileLayout from './MobileLayout'
 
 const INTERESTS = [
@@ -11,6 +12,29 @@ const INTERESTS = [
   { key: 'food',        label: { kr: '음식',     en: 'Food',       mn: 'Хоол'      }, emoji: '🍖' },
   { key: 'photography', label: { kr: '사진',     en: 'Photo',      mn: 'Зураг'     }, emoji: '📸' },
   { key: 'history',     label: { kr: '역사',     en: 'History',    mn: 'Түүх'      }, emoji: '📜' },
+]
+
+const BUDGETS = [
+  { key: 'budget',  label: { kr: '저예산', en: 'Budget',  mn: 'Хямд'   }, emoji: '💵' },
+  { key: 'mid',     label: { kr: '중간',   en: 'Mid',     mn: 'Дунд'   }, emoji: '💳' },
+  { key: 'premium', label: { kr: '프리미엄', en: 'Premium', mn: 'Зэрэглэлтэй' }, emoji: '💎' },
+]
+const PACES = [
+  { key: 'relaxed', label: { kr: '느긋',  en: 'Relaxed', mn: 'Тайван' }, emoji: '🐢' },
+  { key: 'normal',  label: { kr: '보통',  en: 'Normal',  mn: 'Дундаж' }, emoji: '🚶' },
+  { key: 'packed',  label: { kr: '빡빡',  en: 'Packed',  mn: 'Эрчтэй' }, emoji: '🏃' },
+]
+const GROUPS = [
+  { key: 'solo',    label: { kr: '혼자',    en: 'Solo',    mn: 'Ганцаараа' }, emoji: '🧍' },
+  { key: 'couple',  label: { kr: '커플',    en: 'Couple',  mn: 'Хосоор'   }, emoji: '💑' },
+  { key: 'family',  label: { kr: '가족',    en: 'Family',  mn: 'Гэр бүл'  }, emoji: '👨‍👩‍👧' },
+  { key: 'friends', label: { kr: '친구',    en: 'Friends', mn: 'Найзууд'  }, emoji: '👯' },
+]
+const STAYS = [
+  { key: 'hotel',       label: { kr: '호텔',     en: 'Hotel',      mn: 'Зочид буудал' }, emoji: '🏨' },
+  { key: 'guesthouse',  label: { kr: '게스트하우스', en: 'Guesthouse', mn: 'Гэстэйз' }, emoji: '🏠' },
+  { key: 'ger',         label: { kr: '게르',     en: 'Ger Camp',   mn: 'Гэр бааз' }, emoji: '⛺' },
+  { key: 'mixed',       label: { kr: '혼합',     en: 'Mixed',      mn: 'Холимог'  }, emoji: '🎒' },
 ]
 
 function timeIcon(time) {
@@ -31,6 +55,12 @@ export default function MobilePlanner() {
   const { lang } = useLang()
   const [days, setDays] = useState(3)
   const [selectedInterests, setSelectedInterests] = useState([])
+  const [budget, setBudget] = useState('mid')
+  const [pace, setPace] = useState('normal')
+  const [groupType, setGroupType] = useState('couple')
+  const [accommodation, setAccommodation] = useState('mixed')
+  const [startDate, setStartDate] = useState('')
+  const [departureCity, setDepartureCity] = useState('Ulaanbaatar')
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -49,7 +79,13 @@ export default function MobilePlanner() {
     try {
       const langLabel = lang === 'kr' ? 'Korean' : lang === 'en' ? 'English' : 'Mongolian'
       const interestLabels = selectedInterests.map(k => INTERESTS.find(i => i.key === k)?.label.en || k)
-      const result = await generatePlanWithAI(days, interestLabels, langLabel)
+      const result = await generatePlanWithAI(
+        days, interestLabels, langLabel,
+        null,                                // focusLocations
+        startDate || null,                   // startDate
+        departureCity.trim() || null,        // departureCity
+        { budget, pace, groupType, accommodation }
+      )
       setPlan(result)
     } catch (e) {
       setError(e.message)
@@ -112,6 +148,95 @@ export default function MobilePlanner() {
                 </span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Budget */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+          <p className="text-sm font-black text-gray-900 flex items-center gap-2 mb-3">
+            <Wallet size={15} className="text-primary" />
+            {lang === 'kr' ? '예산 수준' : lang === 'en' ? 'Budget Level' : 'Төсөв'}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {BUDGETS.map(b => (
+              <button key={b.key} onClick={() => setBudget(b.key)}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${budget === b.key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'}`}>
+                <span className="text-lg">{b.emoji}</span>
+                <span className={`text-[10px] font-bold ${budget === b.key ? 'text-primary' : 'text-gray-600'}`}>{b.label[lang]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Pace */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+          <p className="text-sm font-black text-gray-900 flex items-center gap-2 mb-3">
+            <Gauge size={15} className="text-primary" />
+            {lang === 'kr' ? '여행 페이스' : lang === 'en' ? 'Pace' : 'Хурд'}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {PACES.map(p => (
+              <button key={p.key} onClick={() => setPace(p.key)}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${pace === p.key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'}`}>
+                <span className="text-lg">{p.emoji}</span>
+                <span className={`text-[10px] font-bold ${pace === p.key ? 'text-primary' : 'text-gray-600'}`}>{p.label[lang]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Group */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+          <p className="text-sm font-black text-gray-900 flex items-center gap-2 mb-3">
+            <Users size={15} className="text-primary" />
+            {lang === 'kr' ? '동행' : lang === 'en' ? 'Group' : 'Хэн нартай'}
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {GROUPS.map(g => (
+              <button key={g.key} onClick={() => setGroupType(g.key)}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${groupType === g.key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'}`}>
+                <span className="text-lg">{g.emoji}</span>
+                <span className={`text-[9px] font-bold ${groupType === g.key ? 'text-primary' : 'text-gray-600'}`}>{g.label[lang]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Accommodation */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+          <p className="text-sm font-black text-gray-900 flex items-center gap-2 mb-3">
+            <Bed size={15} className="text-primary" />
+            {lang === 'kr' ? '숙소 선호' : lang === 'en' ? 'Stay Type' : 'Байр'}
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {STAYS.map(s => (
+              <button key={s.key} onClick={() => setAccommodation(s.key)}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${accommodation === s.key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'}`}>
+                <span className="text-lg">{s.emoji}</span>
+                <span className={`text-[9px] font-bold ${accommodation === s.key ? 'text-primary' : 'text-gray-600'}`}>{s.label[lang]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Date + Departure */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5 space-y-3">
+          <div>
+            <label className="text-sm font-black text-gray-900 flex items-center gap-2 mb-2">
+              <Calendar size={15} className="text-primary" />
+              {lang === 'kr' ? '시작 날짜 (선택)' : lang === 'en' ? 'Start Date (optional)' : 'Эхлэх огноо'}
+            </label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-primary" />
+          </div>
+          <div>
+            <label className="text-sm font-black text-gray-900 flex items-center gap-2 mb-2">
+              <MapPin size={15} className="text-primary" />
+              {lang === 'kr' ? '출발 도시' : lang === 'en' ? 'Departure City' : 'Гарах хот'}
+            </label>
+            <input type="text" value={departureCity} onChange={e => setDepartureCity(e.target.value)}
+              placeholder="Ulaanbaatar"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-primary" />
           </div>
         </div>
 

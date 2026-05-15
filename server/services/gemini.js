@@ -34,72 +34,100 @@ export async function sendChatMessage(message, history = []) {
   return result.response.text();
 }
 
-export async function generateTravelPlan(days, interests, language, locations = null, startDate = null, departureCity = null) {
-  const locationHint = locations?.length > 0
-    ? `\nThe traveler specifically wants to visit these locations: ${locations.join(', ')}. Make sure to include all of them in the itinerary, distributed logically across the days.`
-    : ''
-  const dateHint = startDate ? `\nTrip start date: ${startDate}. Adjust weather_note based on the season.` : ''
-  const departureHint = departureCity ? `\nTraveler departs from: ${departureCity}. Account for travel time on Day 1 and last day.` : ''
+export async function generateTravelPlan(days, interests, language, opts = {}) {
+  // Accept the rich options object the new UI sends, but stay backwards
+  // compatible with the legacy positional call (locations, startDate, ...).
+  const {
+    locations = null,
+    startDate = null,
+    departureCity = null,
+    budget = null,        // 'budget' | 'mid' | 'premium'
+    pace = null,          // 'relaxed' | 'normal' | 'packed'
+    groupType = null,     // 'solo' | 'couple' | 'family' | 'friends'
+    accommodation = null, // 'hotel' | 'guesthouse' | 'ger' | 'camping' | 'mixed'
+  } = opts
 
-  // --- 추가 데이터 조회 및 프롬프트 삽입 (개념적) ---
-  let specificRoadConditions = '';
+  const hint = (label, val) => val ? `\n- ${label}: ${val}` : ''
+  const profileBlock =
+    hint('Focus interests', interests.join(', ')) +
+    hint('Locations to include', locations?.join(', ')) +
+    hint('Start date', startDate) +
+    hint('Departing from', departureCity) +
+    hint('Budget level', budget) +
+    hint('Pace', pace) +
+    hint('Group', groupType) +
+    hint('Accommodation preference', accommodation)
+
+  let specificRoadConditions = ''
   if (locations && locations.length > 0) {
-    // 가상의 함수: locations 배열을 기반으로 도로 조건 데이터를 조회
-    // 실제 구현에서는 DB 쿼리 또는 정적 데이터 조회 로직이 들어감
-    const roadData = await getMongolianRoadConditions(locations); // 이 함수는 별도로 구현 필요
-    if (roadData) {
-      specificRoadConditions = `\n<specific_road_conditions>\n${roadData}\n</specific_road_conditions>`;
+    try {
+      const roadData = await getMongolianRoadConditions(locations)
+      if (roadData) specificRoadConditions = `\n<specific_road_conditions>\n${roadData}\n</specific_road_conditions>`
+    } catch {
+      // road data is optional; ignore lookup failures
     }
   }
-  // --- 추가 데이터 조회 및 프롬프트 삽입 끝 ---
 
-  const prompt = `You are a professional Mongolian tour operator. Create a realistic and highly detailed ${days}-day Mongolia travel itinerary.
-<context>
-Focus on these interests: ${interests.join(', ')}.${locationHint}${dateHint}${departureHint}${specificRoadConditions}
-</context>
+  const prompt = `You are a professional Mongolian tour operator. Create a realistic, highly detailed ${days}-day Mongolia itinerary tuned to the traveller's profile below.
+
+<traveller_profile>${profileBlock}
+</traveller_profile>
 
 <logistics_rules>
-- GEOGRAPHY: Group activities by region (e.g., Central, Gobi, North). Avoid impossible long-distance travel within a single day.
-- ROAD CONDITIONS: Assume average speed of 40-50 km/h for off-road segments. Ensure "estimated_drive_km" is realistic.
-- SEASONALITY: If the trip is in winter (Oct-Apr), focus on winter activities and accessible locations.
+- GEOGRAPHY: group activities by region (Central, Gobi, North, West). No impossible long-distance hops within a single day.
+- ROAD CONDITIONS: assume 40-50 km/h average on off-road segments; estimated_drive_km must be realistic.
+- TIMING: produce 5-7 activities per day spread from morning to evening (07:00-22:00), each with a real clock time. Always include breakfast, lunch, dinner.
+- BUDGET: scale restaurant, accommodation, and activity choices to the budget level. budget=cheap street food + ger/guesthouse, mid=local restaurants + 3-star, premium=top restaurants + 4-5 star hotels.
+- PACE: relaxed=fewer stops + longer rests, normal=balanced, packed=more activities + earlier start.
+- GROUP: family=more breaks + kid-friendly; couple=romantic spots; friends=group-friendly food; solo=safety + meeting people.
+- SEASONALITY: if winter (Oct-Apr), prefer accessible winter activities; if summer, include outdoor festivals/Naadam if relevant to the date.${specificRoadConditions}
 </logistics_rules>
 
 <response_instructions>
-Respond in ${language}. 
-Return ONLY a valid JSON array (no markdown, no extra text) in the format below.
+Respond entirely in ${language}. Return ONLY a valid JSON OBJECT (no markdown fences, no leading prose) matching the schema below.
 </response_instructions>
 
 <json_schema>
-[
-  {
-    "day": 1,
-    "title": "Short day theme title",
-    "difficulty": "easy",
-    "weather_note": "Specific weather/temp note for this region/season.",
-    "preparation": ["item1", "item2", "item3"],
-    "estimated_drive_km": 55,
-    "activities": [
-      { 
-        "time": "09:00", 
-        "location_name": "Exact landmark or place name in English",
-        "text": "Rich, sensory description of the place and activity (30-50 words). Describe visuals vividly." 
-      },
-      { "time": "12:00", "text": "Lunch and next activity" },
-      { "time": "15:00", "text": "Afternoon activity" },
-      { "time": "19:00", "text": "Evening plan" }
-    ]
-  }
-]
+{
+  "itinerary": [
+    {
+      "day": 1,
+      "title": "Short, evocative day title (6-10 words)",
+      "region": "Central | Gobi | North | West | UB",
+      "difficulty": "easy | moderate | hard",
+      "weather_note": "Concrete temperature range and condition for the date/season.",
+      "preparation": ["item1", "item2", "item3", "item4"],
+      "estimated_drive_km": 55,
+      "estimated_cost_usd": { "low": 60, "high": 110 },
+      "accommodation": { "type": "ger camp | hotel | guesthouse | tent", "name": "Specific place name", "price_usd": 45 },
+      "activities": [
+        {
+          "time": "07:30",
+          "type": "breakfast | sightseeing | meal | transit | activity | rest | dinner",
+          "location_name": "Exact landmark or place name in English",
+          "text": "Rich, sensory 25-40 word description: what they see/do/eat, why it matters.",
+          "duration_min": 60,
+          "cost_usd": 8,
+          "transport": "walk | private car | shared van | bus | flight"
+        }
+      ]
+    }
+  ],
+  "packing": ["6-10 trip-specific items (not generic passport): e.g. 'thermal layer for Gobi nights'"],
+  "tips": ["3-5 practical local tips: e.g. 'tip drivers ~10% in cash MNT'"]
+}
 </json_schema>
 
 <field_rules>
-- difficulty: always use English lowercase "easy", "moderate", or "hard" based on physical demand and road conditions.
-- location_name: The most recognizable English name of the specific tourist attraction or landmark.
-- preparation: 3-5 essential items to bring for that day (strings array).
-- estimated_drive_km: total km of driving for the day (integer).
+- All activities have time (HH:MM 24h), type, text. type "meal"/"breakfast"/"dinner" must include a restaurant or food name in location_name.
+- difficulty / type / region / accommodation.type / transport: ALWAYS English lowercase (or capitalised region) — exact tokens from the schema.
+- estimated_cost_usd: realistic ranges in USD for the day's total (food + transport + entry fees + accommodation).
+- preparation: 3-6 trip-specific items (not generic "passport").
+- Use real Mongolian place names (English transliteration is fine: Erdene Zuu, Tsenkher Hot Spring, etc.).
+- Every day must contain at least one meal-type activity for lunch and one for dinner.
 </field_rules>
 
-Include real Mongolian place names (with English or Mongolian script), local hidden gems, and practical survival tips.`
+Include practical survival tips and at least one hidden gem per day. Be specific — name actual restaurants, ger camps, and viewpoints whenever possible.`
 
   const model = genAI.getGenerativeModel({ 
     model: "gemini-2.5-flash",
@@ -127,23 +155,33 @@ Include real Mongolian place names (with English or Mongolian script), local hid
     .trim()
 
   // responseMimeType=application/json should hand us valid JSON directly,
-  // but the model occasionally wraps the array in an object like
-  // { itinerary: [...] } or appends a stray code-fence. Try the whole string
-  // first, then peel off the inner array if that fails.
-  let plan
+  // but the model occasionally appends a stray code-fence. Try parsing the
+  // whole string, then peel out the inner object if that fails.
+  let parsed
   try {
-    const parsed = JSON.parse(cleaned)
-    plan = Array.isArray(parsed) ? parsed : (parsed.itinerary ?? parsed.plan ?? parsed.days)
+    parsed = JSON.parse(cleaned)
   } catch {
-    const match = cleaned.match(/\[[\s\S]*\]/)
-    if (!match) throw new Error('No JSON array in response')
-    plan = JSON.parse(match[0])
+    const objMatch = cleaned.match(/\{[\s\S]*\}/)
+    const arrMatch = cleaned.match(/\[[\s\S]*\]/)
+    if (objMatch) parsed = JSON.parse(objMatch[0])
+    else if (arrMatch) parsed = { itinerary: JSON.parse(arrMatch[0]) }
+    else throw new Error('No JSON in response')
   }
-  if (!Array.isArray(plan)) throw new Error('Plan is not an array')
+
+  // Normalise: backend always returns { itinerary, packing, tips }.
+  const itinerary = Array.isArray(parsed)
+    ? parsed
+    : (parsed.itinerary ?? parsed.plan ?? parsed.days ?? [])
+  if (!Array.isArray(itinerary)) throw new Error('Itinerary is not an array')
+  const plan = {
+    itinerary,
+    packing: Array.isArray(parsed?.packing) ? parsed.packing : [],
+    tips: Array.isArray(parsed?.tips) ? parsed.tips : [],
+  }
 
   // --- 사진 데이터 매칭 로직 ---
-  const enrichedPlan = await Promise.all(plan.map(async (day) => {
-    const enrichedActivities = await Promise.all(day.activities.map(async (activity) => {
+  const enrichedItinerary = await Promise.all(plan.itinerary.map(async (day) => {
+    const enrichedActivities = await Promise.all((day.activities ?? []).map(async (activity) => {
       if (activity.location_name) {
         const photoUrl = await fetchGooglePlacePhoto(activity.location_name);
         return { ...activity, photo_url: photoUrl };
@@ -153,7 +191,7 @@ Include real Mongolian place names (with English or Mongolian script), local hid
     return { ...day, activities: enrichedActivities };
   }));
 
-  return enrichedPlan;
+  return { ...plan, itinerary: enrichedItinerary };
 }
 
 /**
