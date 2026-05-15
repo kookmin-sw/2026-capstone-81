@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Nomadiq — 분석 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!--
+  ══════════════════════════════════════════
+  Firebase 연동 시 아래 주석 해제 후 사용
+  ══════════════════════════════════════════
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+-->
+
+<style>
+:root {
+  --green:     #3D8B3D;
+  --green-lt:  #4CAF50;
+  --green-bg:  #EBF5EB;
+  --green-dim: #2E7D32;
+  --navy:      #1A2340;
+  --text:      #1A1A1A;
+  --text-md:   #555;
+  --text-lt:   #888;
+  --border:    #E4E8E4;
+  --bg:        #FFFFFF;
+  --bg-off:    #F6F8F6;
+  --red:       #E53935;
+  --amber:     #F59E0B;
+  --blue:      #2563EB;
+  --purple:    #7C3AED;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{overscroll-behavior:none;-webkit-text-size-adjust:100%;}
+body{font-family:'Inter','Noto Sans KR',sans-serif;background:var(--bg-off);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:210px;flex-shrink:0;
+  background:var(--navy);color:#fff;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:20px 18px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-icon{width:34px;height:34px;background:var(--green);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sb-wm{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.01em;}
+.sb-wm em{color:#A8E6A3;font-style:normal;}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px;}
+.sb-section{padding:14px 10px 4px;}
+.sb-sec-label{font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.3);text-transform:uppercase;padding:0 8px;margin-bottom:4px;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:background .15s,color .15s;}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.sb-item.active{background:rgba(61,139,61,.3);color:#fff;}
+.sb-item .si{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.sb-bottom{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);}
+.sb-bottom .ver{font-size:10px;color:rgba(255,255,255,.22);}
+.live-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#4CAF50;animation:blink 1.8s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.live-txt{font-size:11px;color:#A8E6A3;font-weight:600;}
+
+/* ── MAIN ── */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--bg);border-bottom:1px solid var(--border);
+  padding:13px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:50;
+}
+.tb-left h1{font-size:17px;font-weight:700;color:var(--navy);}
+.tb-left .tb-sub{font-size:11px;color:var(--text-lt);margin-top:1px;}
+.tb-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.tb-right select{font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
+.tb-right select:focus{border-color:var(--green);}
+.btn-refresh{font-size:12px;padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text-md);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s;}
+.btn-refresh:hover{background:var(--bg-off);}
+.btn-app{font-size:12px;padding:6px 14px;border-radius:7px;background:var(--green);color:#fff;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:5px;transition:opacity .15s;}
+.btn-app:hover{opacity:.85;}
+
+/* ── CONTENT ── */
+.content{padding:20px 24px;flex:1;}
+
+/* ── SECTION HEADER ── */
+.sec-hd{display:flex;align-items:baseline;gap:10px;margin:28px 0 14px;}
+.sec-hd:first-child{margin-top:0;}
+.sec-hd h2{font-size:15px;font-weight:700;color:var(--navy);}
+.sec-hd span{font-size:11px;color:var(--text-lt);}
+
+/* ── PANELS ── */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* ── METRICS ── */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.mc{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s;}
+.mc:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-2px);}
+.mc::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.mc.c-green::after{background:var(--green);}
+.mc.c-blue::after{background:var(--blue);}
+.mc.c-amber::after{background:var(--amber);}
+.mc.c-purple::after{background:var(--purple);}
+.mc.c-red::after{background:var(--red);}
+.mc .mc-ico{font-size:20px;margin-bottom:8px;display:block;}
+.mc .mc-val{font-size:26px;font-weight:800;color:var(--navy);line-height:1;}
+.mc .mc-label{font-size:11px;color:var(--text-lt);margin:5px 0 6px;}
+.mc .mc-chg{font-size:11px;font-weight:600;display:flex;align-items:center;gap:3px;}
+.up{color:#2E7D32;}.dn{color:var(--red);}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.g1{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px;}
+.span2{grid-column:span 2;}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.card h3{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;}
+.card .csub{font-size:11px;color:var(--text-lt);margin-bottom:12px;}
+.cw{position:relative;}
+
+/* ── LEGEND ── */
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
+.leg-i{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-md);}
+.leg-sq{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+
+/* ── BAR SEGMENTS ── */
+.seg-list{display:flex;flex-direction:column;gap:8px;}
+.seg-row{display:flex;align-items:center;gap:8px;}
+.seg-lbl{font-size:11px;color:var(--text-lt);width:48px;flex-shrink:0;}
+.seg-track{flex:1;background:var(--bg-off);border-radius:99px;height:8px;overflow:hidden;}
+.seg-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+.seg-val{font-size:11px;font-weight:700;color:var(--navy);width:30px;text-align:right;}
+
+/* ── TAG CLOUD ── */
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.tag{font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid var(--border);color:var(--text-lt);background:var(--bg);}
+.tag.hot{background:#FFF7ED;color:#C2410C;border-color:#FED7AA;font-weight:600;}
+.tag.new{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE;font-weight:600;}
+
+/* ── PARTNER TABLE ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px;}
+th{text-align:left;color:var(--text-lt);font-weight:600;font-size:10px;padding:7px 10px;border-bottom:1px solid var(--bg-off);background:#FAFBFA;text-transform:uppercase;letter-spacing:.04em;}
+td{padding:10px 10px;border-bottom:1px solid #F5F7F5;color:var(--text-md);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#FAFBFA;}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;}
+.b-on{background:#DCFCE7;color:#15803D;}.b-on::before{background:#16A34A;}
+.b-pend{background:#FEF9C3;color:#854D0E;}.b-pend::before{background:#CA8A04;}
+.b-new{background:#EFF6FF;color:#1D4ED8;}.b-new::before{background:#3B82F6;}
+
+/* ── FUNNEL ── */
+.funnel{display:flex;flex-direction:column;gap:7px;padding:4px 0;}
+.fn-step{display:flex;align-items:center;gap:10px;}
+.fn-lbl{font-size:11px;color:var(--text-lt);width:64px;text-align:right;flex-shrink:0;}
+.fn-track{flex:1;background:var(--bg-off);border-radius:99px;height:26px;overflow:hidden;position:relative;}
+.fn-fill{height:100%;border-radius:99px;display:flex;align-items:center;padding-left:10px;font-size:10px;font-weight:700;color:#fff;white-space:nowrap;}
+.fn-pct{font-size:11px;font-weight:700;color:var(--navy);width:36px;flex-shrink:0;}
+
+/* ── HEATMAP ── */
+.hm-grid{display:grid;grid-template-columns:48px repeat(12,1fr);gap:2px;font-size:9px;}
+.hm-hdr{text-align:center;color:var(--text-lt);padding:2px 0;}
+.hm-lbl{color:var(--text-lt);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;}
+.hm-cell{height:22px;border-radius:3px;cursor:default;transition:transform .12s;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:rgba(255,255,255,.8);}
+.hm-cell:hover{transform:scale(1.18);z-index:2;position:relative;}
+
+/* ── SEASON CARD ── */
+.season-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.sc{border-radius:10px;padding:14px;border:1px solid transparent;}
+.sc-sp{background:#FFF8F0;border-color:#FFD9A0;}
+.sc-su{background:#EBF5EB;border-color:#B8DDB8;}
+.sc-au{background:#FFF3E8;border-color:#FFBF80;}
+.sc-wi{background:#EBF0FB;border-color:#B8C8F0;}
+.sc-emo{font-size:18px;margin-bottom:6px;}
+.sc-name{font-size:11px;font-weight:700;margin-bottom:2px;}
+.sc-sp .sc-name{color:#C8790A;}
+.sc-su .sc-name{color:var(--green);}
+.sc-au .sc-name{color:#B85000;}
+.sc-wi .sc-name{color:#2A4AAA;}
+.sc-period{font-size:10px;color:var(--text-lt);margin-bottom:5px;}
+.sc-desc{font-size:11px;line-height:1.55;color:var(--text-md);}
+.sc-pill{display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;margin-top:6px;}
+.sc-su .sc-pill{background:#D4EDDA;color:#1E7E34;}
+.sc-sp .sc-pill, .sc-au .sc-pill{background:#FFE8C8;color:#924000;}
+.sc-wi .sc-pill{background:#D4DCF4;color:#1A3AAA;}
+
+/* ── INSIGHT CARDS ── */
+.insights{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.insight-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;}
+.ins-ico{font-size:20px;}
+.ins-lbl{font-size:11px;color:var(--text-lt);}
+.ins-val{font-size:18px;font-weight:800;color:var(--navy);}
+.ins-desc{font-size:11px;color:var(--text-lt);line-height:1.5;}
+.ins-trend{font-size:11px;font-weight:700;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  .g2,.g3{grid-template-columns:1fr;}
+  .span2{grid-column:span 1;}
+  .insights{grid-template-columns:1fr 1fr;}
+  .content{padding:14px 16px;}
+  .topbar{padding:10px 16px;}
+}
+@media(max-width:480px){
+  .metrics{grid-template-columns:1fr 1fr;}
+  .mc .mc-val{font-size:20px;}
+  .insights{grid-template-columns:1fr;}
+  .season-cards{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-icon">🏕️</div>
+    <div>
+      <div class="sb-wm">Nomadi<em>q</em></div>
+      <div class="sb-sub">Admin Dashboard</div>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-sec-label">분석</div>
+    <button class="sb-item active" onclick="goTab('overview',this)"><span class="si">📊</span> 전체 현황</button>
+    <button class="sb-item" onclick="goTab('behavior',this)"><span class="si">👆</span> 행동 데이터</button>
+    <button class="sb-item" onclick="goTab('profile',this)"><span class="si">👤</span> 사용자 프로필</button>
+    <button class="sb-item" onclick="goTab('season',this)"><span class="si">📅</span> 여행 시즌</button>
+    <button class="sb-item" onclick="goTab('partner',this)"><span class="si">🤝</span> 파트너 연결</button>
+  </div>
+
+  <div class="sb-section" style="margin-top:4px;">
+    <div class="sb-sec-label">관리</div>
+    <button class="sb-item" onclick="alert('추후 연결 예정')"><span class="si">🗂️</span> 세그먼트</button>
+    <button class="sb-item" onclick="alert('추후 연결 예정')"><span class="si">⚙️</span> 설정</button>
+  </div>
+
+  <div class="sb-bottom">
+    <div class="live-row"><div class="live-dot"></div><div class="live-txt">LIVE</div></div>
+    <div class="ver">v1.0 · 샘플 데이터 모드</div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-left">
+      <h1 id="page-title">전체 현황</h1>
+      <div class="tb-sub" id="last-upd">샘플 데이터 · Firebase 연동 전</div>
+    </div>
+    <div class="tb-right">
+      <select id="selPeriod" onchange="onFilter()"><option value="month">이번 달</option><option value="quarter">이번 분기</option><option value="year">올해</option></select>
+      <select id="selAge" onchange="onFilter()"><option value="all">전체 연령</option><option value="20">20대</option><option value="30">30대</option><option value="40">40대</option><option value="50">50대+</option></select>
+      <button class="btn-refresh" onclick="refresh()">↻ 새로고침</button>
+      <a href="https://master.d4oeyk423ncnj.amplifyapp.com/home" target="_blank" class="btn-app">✦ 앱 열기</a>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══ OVERVIEW ══ -->
+    <div class="panel active" id="panel-overview">
+      <div class="metrics">
+        <div class="mc c-green"><span class="mc-ico">🧑‍💼</span><div class="mc-val" id="m-users">—</div><div class="mc-label">총 사용자</div><div class="mc-chg up">▲ 12% 전월 대비</div></div>
+        <div class="mc c-blue"><span class="mc-ico">🔍</span><div class="mc-val" id="m-search">—</div><div class="mc-label">검색 이벤트</div><div class="mc-chg up">▲ 18%</div></div>
+        <div class="mc c-amber"><span class="mc-ico">📅</span><div class="mc-val" id="m-plan">—</div><div class="mc-label">AI 일정 생성</div><div class="mc-chg up">▲ 31%</div></div>
+        <div class="mc c-purple"><span class="mc-ico">💬</span><div class="mc-val" id="m-chat">—</div><div class="mc-label">챗봇 질문 수</div><div class="mc-chg up">▲ 24%</div></div>
+      </div>
+
+      <div class="insights">
+        <div class="insight-card"><div class="ins-ico">🇯🇵</div><div class="ins-lbl">20대 핫 키워드</div><div class="ins-val">고비 사막</div><div class="ins-desc">20대 검색의 28% 차지</div><div class="ins-trend up">▲ 28% 급증</div></div>
+        <div class="insight-card"><div class="ins-ico">🌿</div><div class="ins-lbl">30대 인기 콘텐츠</div><div class="ins-val">초원 게르 체험</div><div class="ins-desc">블로그 조회 1위</div><div class="ins-trend up">▲ 41% 조회</div></div>
+        <div class="insight-card"><div class="ins-ico">❄️</div><div class="ins-lbl">비수기 특이점</div><div class="ins-val">겨울 오로라</div><div class="ins-desc">겨울 검색량 예년比 증가</div><div class="ins-trend up">▲ 19% 증가</div></div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <h3>일별 신규 사용자 (14일)</h3>
+          <div class="csub">최근 2주</div>
+          <div class="cw" style="height:190px"><canvas id="cDaily" role="img" aria-label="14일 일별 신규 사용자">일별 트렌드</canvas></div>
+        </div>
+        <div class="card">
+          <h3>연령대별 기능 사용 선호</h3>
+          <div class="csub">필터 적용 가능</div>
+          <div class="leg">
+            <span class="leg-i"><span class="leg-sq" style="background:#3D8B3D"></span>AI 챗봇</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#2563EB"></span>지도 탐색</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#F59E0B"></span>AI 일정</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#7C3AED"></span>블로그</span>
+          </div>
+          <div class="cw" style="height:165px"><canvas id="cAgePref" role="img" aria-label="연령대별 기능 선호">연령 선호</canvas></div>
+        </div>
+      </div>
+
+      <div class="g3">
+        <div class="card">
+          <h3>기능별 사용 비중</h3>
+          <div class="csub">전체 이벤트 기준</div>
+          <div class="cw" style="height:165px"><canvas id="cFeature" role="img" aria-label="기능 사용 도넛">기능 분포</canvas></div>
+        </div>
+        <div class="card">
+          <h3>연령대 비중</h3>
+          <div class="csub">가입 사용자 기준</div>
+          <div class="seg-list" style="margin-top:6px;">
+            <div class="seg-row"><span class="seg-lbl">20대</span><div class="seg-track"><div class="seg-fill" style="width:38%;background:#3D8B3D;"></div></div><span class="seg-val">38%</span></div>
+            <div class="seg-row"><span class="seg-lbl">30대</span><div class="seg-track"><div class="seg-fill" style="width:30%;background:#2563EB;"></div></div><span class="seg-val">30%</span></div>
+            <div class="seg-row"><span class="seg-lbl">40대</span><div class="seg-track"><div class="seg-fill" style="width:20%;background:#F59E0B;"></div></div><span class="seg-val">20%</span></div>
+            <div class="seg-row"><span class="seg-lbl">50대+</span><div class="seg-track"><div class="seg-fill" style="width:12%;background:#7C3AED;"></div></div><span class="seg-val">12%</span></div>
+          </div>
+          <div style="margin-top:14px;font-size:10px;color:var(--text-lt);margin-bottom:5px;">인기 검색 키워드</div>
+          <div class="tags">
+            <span class="tag hot">🔥 고비 사막</span>
+            <span class="tag hot">🔥 게르 체험</span>
+            <span class="tag new">🆕 나담 축제</span>
+            <span class="tag">테를지</span>
+            <span class="tag new">🆕 홉스골 호수</span>
+            <span class="tag">울란바토르</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>국적 분포</h3>
+          <div class="csub">상위 5개국</div>
+          <div class="cw" style="height:165px"><canvas id="cNat" role="img" aria-label="국적 분포">국적</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BEHAVIOR ══ -->
+    <div class="panel" id="panel-behavior">
+      <div class="metrics">
+        <div class="mc c-blue"><span class="mc-ico">🔍</span><div class="mc-val">142,830</div><div class="mc-label">총 검색 이벤트</div><div class="mc-chg up">▲ 18%</div></div>
+        <div class="mc c-green"><span class="mc-ico">🗺️</span><div class="mc-val">89,410</div><div class="mc-label">지도 클릭</div><div class="mc-chg up">▲ 9%</div></div>
+        <div class="mc c-amber"><span class="mc-ico">💬</span><div class="mc-val">34,280</div><div class="mc-label">챗봇 대화</div><div class="mc-chg up">▲ 24%</div></div>
+        <div class="mc c-purple"><span class="mc-ico">📱</span><div class="mc-val">72%</div><div class="mc-label">모바일 비율</div><div class="mc-chg up">▲ 5%</div></div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <h3>방문 → 챗봇 사용 퍼널</h3>
+          <div class="csub">전체 세션 기준</div>
+          <div class="funnel" style="margin-top:10px;">
+            <div class="fn-step"><span class="fn-lbl">방문</span><div class="fn-track"><div class="fn-fill" style="width:100%;background:#3D8B3D;">142,830</div></div><span class="fn-pct">100%</span></div>
+            <div class="fn-step"><span class="fn-lbl">검색</span><div class="fn-track"><div class="fn-fill" style="width:74%;background:#4CAF50;">105,694</div></div><span class="fn-pct">74%</span></div>
+            <div class="fn-step"><span class="fn-lbl">지도 탐색</span><div class="fn-track"><div class="fn-fill" style="width:63%;background:#2563EB;">89,410</div></div><span class="fn-pct">63%</span></div>
+            <div class="fn-step"><span class="fn-lbl">AI 일정</span><div class="fn-track"><div class="fn-fill" style="width:28%;background:#F59E0B;">39,992</div></div><span class="fn-pct">28%</span></div>
+            <div class="fn-step"><span class="fn-lbl">챗봇 사용</span><div class="fn-track"><div class="fn-fill" style="width:24%;background:#7C3AED;">34,280</div></div><span class="fn-pct">24%</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>시간대별 활동 히트맵</h3>
+          <div class="csub">요일 × 시간대</div>
+          <div id="heatmap" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <h3>가장 많이 검색된 몽골 여행지 Top 8</h3>
+          <div class="csub">최근 30일 기준</div>
+          <div class="cw" style="height:260px"><canvas id="cDest" role="img" aria-label="인기 여행지">여행지 순위</canvas></div>
+        </div>
+        <div class="card">
+          <h3>월별 이벤트 추이</h3>
+          <div class="csub">최근 6개월</div>
+          <div class="leg">
+            <span class="leg-i"><span class="leg-sq" style="background:#3D8B3D"></span>검색</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#2563EB"></span>지도</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#F59E0B"></span>챗봇</span>
+          </div>
+          <div class="cw" style="height:220px"><canvas id="cMonthly" role="img" aria-label="월별 추이">월별</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PROFILE ══ -->
+    <div class="panel" id="panel-profile">
+      <div class="metrics">
+        <div class="mc c-green"><span class="mc-ico">📋</span><div class="mc-val">24,810</div><div class="mc-label">총 가입자</div><div class="mc-chg up">▲ 12%</div></div>
+        <div class="mc c-blue"><span class="mc-ico">🌍</span><div class="mc-val">32</div><div class="mc-label">국적 수</div><div class="mc-chg up">▲ 3개국 추가</div></div>
+        <div class="mc c-amber"><span class="mc-ico">📅</span><div class="mc-val">27.8세</div><div class="mc-label">평균 연령</div><div class="mc-chg" style="color:var(--text-lt);">전체 평균</div></div>
+        <div class="mc c-purple"><span class="mc-ico">🌐</span><div class="mc-val">3</div><div class="mc-label">지원 언어</div><div class="mc-chg" style="color:var(--text-lt);">한·영·몽</div></div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <h3>방한 목적 분포</h3>
+          <div class="csub">사용자 설정 기준</div>
+          <div class="cw" style="height:210px"><canvas id="cPurpose" role="img" aria-label="방한 목적">목적</canvas></div>
+        </div>
+        <div class="card">
+          <h3>언어 설정 비중</h3>
+          <div class="csub">앱 내 언어 설정</div>
+          <div class="cw" style="height:210px"><canvas id="cLang" role="img" aria-label="언어 설정">언어</canvas></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <h3>연령대 × 목적 교차 분석</h3>
+          <div class="csub">연령대별 방한 이유</div>
+          <div class="leg">
+            <span class="leg-i"><span class="leg-sq" style="background:#3D8B3D"></span>여행</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#2563EB"></span>유학/공부</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#F59E0B"></span>취업/일</span>
+          </div>
+          <div class="cw" style="height:200px"><canvas id="cAgePurpose" role="img" aria-label="연령 목적">연령 목적</canvas></div>
+        </div>
+        <div class="card">
+          <h3>국적 분포 Top 8</h3>
+          <div class="csub">가입자 국적 기준</div>
+          <div class="cw" style="height:240px"><canvas id="cNatBar" role="img" aria-label="국적 순위">국적 바</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SEASON ══ -->
+    <div class="panel" id="panel-season">
+      <div class="metrics">
+        <div class="mc c-green"><span class="mc-ico">☀️</span><div class="mc-val">7~8월</div><div class="mc-label">최성수기</div><div class="mc-chg up">▲ 나담 축제</div></div>
+        <div class="mc c-blue"><span class="mc-ico">🌸</span><div class="mc-val">4~5월</div><div class="mc-label">봄 추천 시기</div><div class="mc-chg up">▲ 쾌적한 날씨</div></div>
+        <div class="mc c-amber"><span class="mc-ico">🍂</span><div class="mc-val">9~10월</div><div class="mc-label">가을 추천 시기</div><div class="mc-chg up">▲ 황금 초원</div></div>
+        <div class="mc c-purple"><span class="mc-ico">❄️</span><div class="mc-val">11~3월</div><div class="mc-label">비수기</div><div class="mc-chg" style="color:#7C3AED;">오로라 특수 체험</div></div>
+      </div>
+
+      <div class="g2">
+        <div class="card span2">
+          <h3>월별 여행자 수 (상대 지수)</h3>
+          <div class="csub">계절별 성수기·비수기 현황</div>
+          <div class="leg">
+            <span class="leg-i"><span class="leg-sq" style="background:#3D8B3D"></span>성수기</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#A8D5A8"></span>준성수기</span>
+            <span class="leg-i"><span class="leg-sq" style="background:#D4E8D4"></span>비수기</span>
+          </div>
+          <div class="cw" style="height:240px"><canvas id="cSeason" role="img" aria-label="월별 여행자 수">시즌 차트</canvas></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <h3>계절별 특징</h3>
+          <div class="csub">시즌별 여행 포인트</div>
+          <div class="season-cards" style="margin-top:6px;">
+            <div class="sc sc-su"><div class="sc-emo">☀️</div><div class="sc-name">여름 · 성수기</div><div class="sc-period">6월 ~ 8월</div><div class="sc-desc">나담 축제(7월), 온난한 날씨. 여행자 최다.</div><span class="sc-pill">🔥 최성수기</span></div>
+            <div class="sc sc-sp"><div class="sc-emo">🌸</div><div class="sc-name">봄 · 준성수기</div><div class="sc-period">4월 ~ 5월</div><div class="sc-desc">초록 초원 시작. 인파 적고 여행하기 좋음.</div><span class="sc-pill">✅ 추천</span></div>
+            <div class="sc sc-au"><div class="sc-emo">🍂</div><div class="sc-name">가을 · 준성수기</div><div class="sc-period">9월 ~ 10월</div><div class="sc-desc">황금빛 초원과 맑은 하늘. 일교차 주의.</div><span class="sc-pill">✅ 추천</span></div>
+            <div class="sc sc-wi"><div class="sc-emo">❄️</div><div class="sc-name">겨울 · 비수기</div><div class="sc-period">11월 ~ 3월</div><div class="sc-desc">영하 30°C 이하. 오로라 등 특수 체험 가능.</div><span class="sc-pill">❄️ 특별 체험</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>시즌별 검색 키워드 분포</h3>
+          <div class="csub">계절별 인기 검색어</div>
+          <div class="cw" style="height:240px"><canvas id="cSeasonKw" role="img" aria-label="시즌 키워드">시즌 키워드</canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PARTNER ══ -->
+    <div class="panel" id="panel-partner">
+      <div class="metrics">
+        <div class="mc c-green"><span class="mc-ico">🤝</span><div class="mc-val">5개사</div><div class="mc-label">활성 파트너</div><div class="mc-chg up">▲ 1개사 신규</div></div>
+        <div class="mc c-blue"><span class="mc-ico">📦</span><div class="mc-val">3,482</div><div class="mc-label">이번 달 연결</div><div class="mc-chg up">▲ 8%</div></div>
+        <div class="mc c-amber"><span class="mc-ico">💰</span><div class="mc-val">₩48.2M</div><div class="mc-label">이번 달 수익</div><div class="mc-chg up">▲ 21%</div></div>
+        <div class="mc c-purple"><span class="mc-ico">📈</span><div class="mc-val">₩13,845</div><div class="mc-label">건당 평균 단가</div><div class="mc-chg up">▲ 12%</div></div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <h3>파트너별 월 수익</h3>
+          <div class="csub">이번 달 기준 (만원)</div>
+          <div class="cw" style="height:200px"><canvas id="cPartRev" role="img" aria-label="파트너 수익">파트너 수익</canvas></div>
+        </div>
+        <div class="card">
+          <h3>세그먼트별 연결 건수</h3>
+          <div class="csub">카테고리 기준</div>
+          <div class="cw" style="height:200px"><canvas id="cSeg" role="img" aria-label="세그먼트">세그먼트</canvas></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px;">
+        <h3>파트너사 상세 현황</h3>
+        <div class="csub" style="margin-bottom:12px;">전체 계약 파트너</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>파트너사</th><th>세그먼트</th><th>대상 연령</th><th>단가</th><th>이번 달</th><th>월 수익</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td><strong>하나투어</strong></td><td>몽골 고비 관심 고객</td><td>20~30대</td><td>₩4,500</td><td>1,240건</td><td>₩5.6M</td><td><span class="badge b-on">연결 중</span></td></tr>
+              <tr><td><strong>인터파크</strong></td><td>게르 체험 MZ</td><td>20대</td><td>₩3,800</td><td>892건</td><td>₩3.4M</td><td><span class="badge b-on">연결 중</span></td></tr>
+              <tr><td><strong>모두투어</strong></td><td>나담 축제 패키지</td><td>30대</td><td>₩8,200</td><td>380건</td><td>₩3.1M</td><td><span class="badge b-on">연결 중</span></td></tr>
+              <tr><td><strong>여기어때</strong></td><td>홉스골 자유여행</td><td>20~30대</td><td>₩2,900</td><td>540건</td><td>₩1.6M</td><td><span class="badge b-new">신규</span></td></tr>
+              <tr><td><strong>롯데관광</strong></td><td>시니어 몽골 패키지</td><td>40~50대</td><td>₩12,000</td><td>210건</td><td>₩2.5M</td><td><span class="badge b-pend">협의 중</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>파트너별 월별 수익 추이</h3>
+        <div class="csub">최근 6개월</div>
+        <div class="leg">
+          <span class="leg-i"><span class="leg-sq" style="background:#3D8B3D"></span>하나투어</span>
+          <span class="leg-i"><span class="leg-sq" style="background:#2563EB"></span>인터파크</span>
+          <span class="leg-i"><span class="leg-sq" style="background:#F59E0B"></span>모두투어</span>
+          <span class="leg-i"><span class="leg-sq" style="background:#7C3AED"></span>롯데관광</span>
+        </div>
+        <div class="cw" style="height:200px"><canvas id="cPartTrend" role="img" aria-label="파트너 추이">파트너 추이</canvas></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+/* ══════════════════════════════════════════
+   DATA LAYER
+   Firebase 연동 시 이 블록만 교체하세요.
+   ══════════════════════════════════════════
+   async function fetchData() {
+     const FIREBASE_CONFIG = { apiKey:"...", projectId:"...", ... };
+     if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+     const db = firebase.firestore();
+     const [evSnap, profSnap] = await Promise.all([
+       db.collection('events').orderBy('timestamp','desc').limit(5000).get(),
+       db.collection('user_profiles').limit(2000).get(),
+     ]);
+     return {
+       events:   evSnap.docs.map(d=>d.data()),
+       profiles: profSnap.docs.map(d=>d.data()),
+     };
+   }
+*/
+function mockData() {
+  return {
+    daily:   [88,72,130,158,120,182,214,148,268,240,350,316,402,448],
+    agePref: {
+      labels:['20대','30대','40대','50대+'],
+      chatbot:[44,28,20,12], map:[38,32,22,18],
+      plan:  [30,28,24,20], blog:[28,22,18,12],
+    },
+    feature: { labels:['AI 챗봇','지도 탐색','AI 일정','블로그'], data:[34,28,22,16] },
+    nat:     { labels:['한국','일본','중국','미국','독일'], data:[32,20,16,18,14] },
+    dest:    { labels:['고비 사막','울란바토르','테를지','홉스골','카라코룸','체체를레그','엘승타사르하이','다르항'], data:[8420,7200,6340,5890,4920,3970,3540,2800] },
+    monthly: { labels:['12월','1월','2월','3월','4월','5월'], search:[78000,85000,92000,108000,125000,142830], map:[48000,52000,58000,68000,80000,89410], chat:[18000,22000,26000,30000,32000,34280] },
+    purpose: { labels:['여행/관광','유학/공부','취업/일'], data:[62,24,14] },
+    lang:    { labels:['한국어','영어','몽골어'], data:[48,38,14] },
+    agePurp: { labels:['20대','30대','40대','50대+'], travel:[42,28,20,10], study:[32,15,8,5], work:[16,24,20,14] },
+    natBar:  { labels:['한국','일본','미국','중국','독일','프랑스','호주','영국'], data:[8200,5200,4600,4100,2800,2200,1900,1600] },
+    season:  [12,10,18,35,52,78,100,95,60,42,18,10],
+    seasonKw:{ labels:['고비 사막','게르 체험','나담 축제','초원','홉스골'], spring:[20,25,10,35,10], summer:[22,28,60,30,15], autumn:[25,20,5,40,18], winter:[15,10,2,8,5] },
+    partRev: { labels:['하나투어','인터파크','모두투어','롯데관광','여기어때'], data:[5600,3400,3100,2500,1600] },
+    seg:     { labels:['고비 관심','게르 MZ','나담 패키지','시니어','홉스골'], data:[1240,892,540,380,210] },
+    partTrend:{ labels:['12월','1월','2월','3월','4월','5월'], hana:[3200,3600,4100,4800,5200,5600], inter:[2100,2400,2700,3000,3200,3400], moodu:[1800,2000,2400,2800,3000,3100], lotte:[1200,1400,1700,2000,2200,2500] },
+    totals:  { users:24810, search:142830, plan:39992, chat:34280 },
+  };
+}
+
+/* ── NAV ── */
+const TITLES = { overview:'전체 현황', behavior:'행동 데이터', profile:'사용자 프로필', season:'여행 시즌', partner:'파트너 연결' };
+function goTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent = TITLES[id];
+}
+
+/* ── CHART REGISTRY ── */
+const R = {};
+function mk(id, cfg) { if(R[id]) R[id].destroy(); R[id]=new Chart(document.getElementById(id),cfg); }
+
+const C = { g:'#3D8B3D', gl:'#4CAF50', b:'#2563EB', a:'#F59E0B', p:'#7C3AED', r:'#E53935', t:'#14B8A6' };
+const baseScales = (ext={}) => ({
+  x:{ grid:{display:false}, ticks:{color:'#aaa',font:{size:10}}, ...ext.x },
+  y:{ grid:{color:'rgba(0,0,0,0.04)'}, ticks:{color:'#aaa',font:{size:10}}, beginAtZero:true, ...ext.y }
+});
+
+function buildAll(d, ageFilter) {
+  /* ── OVERVIEW ── */
+  const num = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n;
+  document.getElementById('m-users').textContent  = num(d.totals.users);
+  document.getElementById('m-search').textContent = num(d.totals.search);
+  document.getElementById('m-plan').textContent   = num(d.totals.plan);
+  document.getElementById('m-chat').textContent   = num(d.totals.chat);
+
+  /* Daily */
+  const days=[]; const now=new Date();
+  for(let i=13;i>=0;i--){const dt=new Date(now);dt.setDate(dt.getDate()-i);days.push((dt.getMonth()+1)+'/'+(dt.getDate()));}
+  mk('cDaily',{type:'line',data:{labels:days,datasets:[{label:'신규 사용자',data:d.daily,borderColor:C.g,backgroundColor:'rgba(61,139,61,.07)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:C.g}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:baseScales({y:{ticks:{callback:v=>v>999?Math.round(v/100)/10+'k':v,color:'#aaa',font:{size:10}}}})}});
+
+  /* Age pref */
+  const ap=d.agePref;
+  const aIdx = ageFilter==='all'?[0,1,2,3]:[['20','30','40','50'].indexOf(ageFilter)];
+  const aLbl  = ageFilter==='all'?ap.labels:[ap.labels[['20','30','40','50'].indexOf(ageFilter)]];
+  mk('cAgePref',{type:'bar',data:{labels:aLbl,datasets:[{label:'AI 챗봇',data:aIdx.map(i=>ap.chatbot[i]),backgroundColor:C.g,borderRadius:4,borderSkipped:false},{label:'지도 탐색',data:aIdx.map(i=>ap.map[i]),backgroundColor:C.b,borderRadius:4,borderSkipped:false},{label:'AI 일정',data:aIdx.map(i=>ap.plan[i]),backgroundColor:C.a,borderRadius:4,borderSkipped:false},{label:'블로그',data:aIdx.map(i=>ap.blog[i]),backgroundColor:C.p,borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:baseScales({y:{ticks:{callback:v=>v+'%',color:'#aaa',font:{size:10}},max:55}})}});
+
+  /* Feature donut */
+  mk('cFeature',{type:'doughnut',data:{labels:d.feature.labels,datasets:[{data:d.feature.data,backgroundColor:[C.g,C.b,C.a,C.p],borderWidth:0,hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{padding:8,font:{size:11},color:'#666',boxWidth:9,boxHeight:9}}}}});
+
+  /* Nat donut overview */
+  mk('cNat',{type:'doughnut',data:{labels:d.nat.labels,datasets:[{data:d.nat.data,backgroundColor:[C.g,C.b,C.a,C.p,C.t],borderWidth:0,hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{padding:8,font:{size:11},color:'#666',boxWidth:9,boxHeight:9}}}}});
+
+  /* ── BEHAVIOR ── */
+  mk('cDest',{type:'bar',data:{labels:d.dest.labels,datasets:[{label:'검색',data:d.dest.data,backgroundColor:d.dest.data.map((_,i)=>i<2?C.g:'rgba(61,139,61,.35)'),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString()}회`}}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#aaa',font:{size:10}}},y:{grid:{display:false},ticks:{color:'#555',font:{size:11}}}}}});
+
+  mk('cMonthly',{type:'line',data:{labels:d.monthly.labels,datasets:[{label:'검색',data:d.monthly.search,borderColor:C.g,backgroundColor:'transparent',tension:.4,pointRadius:4,pointBackgroundColor:C.g},{label:'지도',data:d.monthly.map,borderColor:C.b,backgroundColor:'transparent',tension:.4,pointRadius:4,pointBackgroundColor:C.b,borderDash:[5,4]},{label:'챗봇',data:d.monthly.chat,borderColor:C.a,backgroundColor:'transparent',tension:.4,pointRadius:4,pointBackgroundColor:C.a,borderDash:[3,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:baseScales({y:{ticks:{callback:v=>v>=1000?Math.round(v/1000)+'k':v,color:'#aaa',font:{size:10}}}})}});
+
+  /* ── PROFILE ── */
+  mk('cPurpose',{type:'doughnut',data:{labels:d.purpose.labels,datasets:[{data:d.purpose.data,backgroundColor:[C.g,C.b,C.a],borderWidth:0,hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:10,font:{size:11},color:'#666',boxWidth:9,boxHeight:9}}}}});
+
+  mk('cLang',{type:'doughnut',data:{labels:d.lang.labels,datasets:[{data:d.lang.data,backgroundColor:[C.g,C.b,C.p],borderWidth:0,hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:10,font:{size:11},color:'#666',boxWidth:9,boxHeight:9}}}}});
+
+  mk('cAgePurpose',{type:'bar',data:{labels:d.agePurp.labels,datasets:[{label:'여행',data:d.agePurp.travel,backgroundColor:C.g,stack:'s',borderRadius:0,borderSkipped:false},{label:'유학',data:d.agePurp.study,backgroundColor:C.b,stack:'s',borderRadius:0,borderSkipped:false},{label:'취업',data:d.agePurp.work,backgroundColor:C.a,stack:'s',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#aaa',font:{size:11}}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#aaa',font:{size:10}}}}}});
+
+  mk('cNatBar',{type:'bar',data:{labels:d.natBar.labels,datasets:[{label:'가입자',data:d.natBar.data,backgroundColor:d.natBar.data.map((_,i)=>i<2?C.g:'rgba(61,139,61,.35)'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString()}명`}}},scales:{x:{grid:{display:false},ticks:{color:'#aaa',font:{size:10},maxRotation:30}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#aaa',font:{size:10}}}}}});
+
+  /* ── SEASON ── */
+  const months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const sv=d.season;
+  mk('cSeason',{type:'bar',data:{labels:months,datasets:[{label:'여행자 지수',data:sv,backgroundColor:sv.map(v=>v>=75?C.g:v>=40?'#A8D5A8':'#D4E8D4'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const v=ctx.raw;return ` 지수 ${v} · ${v>=75?'성수기 🔥':v>=40?'준성수기 ✅':'비수기 ❄️'}`;},title:ctx=>`${ctx[0].label}`}}},scales:{x:{grid:{display:false},ticks:{color:'#aaa',font:{size:11}}},y:{beginAtZero:true,max:115,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#aaa',font:{size:10}}}}}});
+
+  const sk=d.seasonKw;
+  mk('cSeasonKw',{type:'bar',data:{labels:sk.labels,datasets:[{label:'봄',data:sk.spring,backgroundColor:'#FFBF80',stack:'s',borderRadius:0,borderSkipped:false},{label:'여름',data:sk.summer,backgroundColor:C.g,stack:'s',borderRadius:0,borderSkipped:false},{label:'가을',data:sk.autumn,backgroundColor:'#F97316',stack:'s',borderRadius:0,borderSkipped:false},{label:'겨울',data:sk.winter,backgroundColor:C.b,stack:'s',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:8,font:{size:11},color:'#666',boxWidth:9,boxHeight:9}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#555',font:{size:11}}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#aaa',font:{size:10}}}}}});
+
+  /* ── PARTNER ── */
+  mk('cPartRev',{type:'bar',data:{labels:d.partRev.labels,datasets:[{label:'월 수익(만원)',data:d.partRev.data,backgroundColor:[C.g,C.b,C.a,C.p,C.t],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ₩${ctx.raw.toLocaleString()}만`}}},scales:{x:{grid:{display:false},ticks:{color:'#aaa',font:{size:11}}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#aaa',font:{size:10},callback:v=>'₩'+v+'만'}}}}});
+
+  mk('cSeg',{type:'doughnut',data:{labels:d.seg.labels,datasets:[{data:d.seg.data,backgroundColor:[C.g,C.b,C.a,C.p,C.t],borderWidth:0,hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{padding:8,font:{size:11},color:'#666',boxWidth:9,boxHeight:9}}}}});
+
+  mk('cPartTrend',{type:'line',data:{labels:d.partTrend.labels,datasets:[{label:'하나투어',data:d.partTrend.hana,borderColor:C.g,backgroundColor:'transparent',tension:.4,pointRadius:4,pointBackgroundColor:C.g},{label:'인터파크',data:d.partTrend.inter,borderColor:C.b,backgroundColor:'transparent',tension:.4,pointRadius:4,pointBackgroundColor:C.b,borderDash:[5,4]},{label:'모두투어',data:d.partTrend.moodu,borderColor:C.a,backgroundColor:'transparent',tension:.4,pointRadius:4,pointBackgroundColor:C.a,borderDash:[3,3]},{label:'롯데관광',data:d.partTrend.lotte,borderColor:C.p,backgroundColor:'transparent',tension:.4,pointRadius:4,pointBackgroundColor:C.p,borderDash:[8,4]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#aaa',font:{size:11}}},y:{beginAtZero:false,grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#aaa',font:{size:10},callback:v=>'₩'+v+'만'}}}}});
+}
+
+/* ── HEATMAP ── */
+function buildHeatmap() {
+  const days=['월','화','수','목','금','토','일'];
+  const hours=['6시','8시','10시','12시','14시','16시','18시','20시','22시','0시','2시','4시'];
+  const raw=[[10,22,38,45,52,60,55,48,30,15,5,2],[12,25,42,50,55,62,58,52,35,18,6,3],[11,24,40,48,54,61,56,50,33,16,5,2],[13,26,43,51,56,63,59,53,36,19,7,3],[15,28,44,52,58,65,62,56,42,22,8,4],[8,18,30,40,52,68,72,66,55,30,12,6],[6,14,25,35,48,64,68,62,50,28,10,5]];
+  const max=72;
+  function hc(v){const t=v/max;if(t<0.25)return`rgba(61,139,61,${0.12+t*0.6})`;if(t<0.55)return`rgba(61,139,61,${0.35+t*0.5})`;if(t<0.80)return`rgba(37,99,235,${0.45+t*0.4})`;return`rgba(229,57,53,${0.55+t*0.35})`;}
+  const wrap=document.getElementById('heatmap');
+  if(!wrap)return;
+  const g=document.createElement('div');
+  g.className='hm-grid';
+  g.innerHTML='<div></div>'+hours.map(h=>`<div class="hm-hdr">${h}</div>`).join('');
+  days.forEach((day,di)=>{
+    g.innerHTML+=`<div class="hm-lbl">${day}</div>`;
+    hours.forEach((_,hi)=>{
+      const v=raw[di][hi];
+      g.innerHTML+=`<div class="hm-cell" style="background:${hc(v)}" title="${day}요일 ${hours[hi]}: ${v}">${v>44?v:''}</div>`;
+    });
+  });
+  wrap.appendChild(g);
+}
+
+/* ── FILTER & REFRESH ── */
+function onFilter(){ buildAll(mockData(), document.getElementById('selAge').value); }
+function refresh(){
+  document.getElementById('last-upd').textContent='새로고침 중…';
+  setTimeout(()=>{
+    buildAll(mockData(),'all');
+    document.getElementById('selAge').value='all';
+    document.getElementById('last-upd').textContent='업데이트됨: '+new Date().toLocaleTimeString('ko-KR');
+  },350);
+}
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded',()=>{
+  buildAll(mockData(),'all');
+  buildHeatmap();
+  document.getElementById('last-upd').textContent='샘플 데이터 · '+new Date().toLocaleTimeString('ko-KR');
+});
+</script>
+</body>
+</html>
