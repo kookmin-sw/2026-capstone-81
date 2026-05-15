@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
-import { generatePlanWithGemini } from '../../utils/gemini'
+import { generatePlanWithAI } from '../../utils/api'
 import { Sparkles, Clock, Heart, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon } from 'lucide-react'
 
 function timeIcon(time) {
@@ -50,7 +50,7 @@ export default function DesktopPlanner() {
     setGenError('')
     try {
       const interestLabels = interests.map(k => tr(k))
-      const plan = await generatePlanWithGemini(days, interestLabels, langLabels[lang] || 'Korean', focusLocations.length ? focusLocations : null)
+      const plan = await generatePlanWithAI(days, interestLabels, langLabels[lang] || 'Korean', focusLocations.length ? focusLocations : null)
       setResult(plan)
     } catch {
       setGenError(

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react'
-import { chatWithGemini } from '../../utils/gemini'
+import { chatWithAI } from '../../utils/api'
 
 const GREETING = '안녕하세요! 몽골 여행 전문 Chatbot Nomadiq입니다. 여행 계획, 맛집, 비자, 날씨 등 무엇이든 물어보세요! 😊'
 
@@ -37,7 +37,7 @@ export default function ChatWidget() {
     setMessages(prev => [...prev, { role: 'user', text: trimmed }])
     setThinking(true)
     try {
-      const reply = await chatWithGemini(history, trimmed)
+      const reply = await chatWithAI(history, trimmed)
       setHistory(prev => [
         ...prev,
         { role: 'user', parts: [{ text: trimmed }] },

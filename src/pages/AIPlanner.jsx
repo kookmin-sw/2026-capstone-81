@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Sparkles, ChevronDown, ChevronUp, Calculator } from 'lucide-react'
 import { useLang } from '../context/LangContext'
-import { generatePlanWithGemini } from '../utils/gemini'
+import { generatePlanWithAI } from '../utils/api'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 
@@ -77,7 +77,7 @@ export default function AIPlanner() {
     setLoading(true); setResult(null); setOpenDay(null); setGenError('')
     try {
       const interestLabels = interests.map(k => tr(k))
-      const plan = await generatePlanWithGemini(
+      const plan = await generatePlanWithAI(
         days,
         interestLabels,
         langLabels[lang] || 'Korean'

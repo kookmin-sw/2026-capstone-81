@@ -4,7 +4,7 @@ import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
 import { Search, Bell, Bookmark, ChevronDown, Send, Sparkles, MapPin, X } from 'lucide-react'
 import DesktopSidebar from './DesktopSidebar'
-import { chatWithGemini } from '../../utils/gemini'
+import { chatWithAI } from '../../utils/api'
 
 function AIPanel({ onClose }) {
   const { lang } = useLang()
@@ -47,7 +47,7 @@ function AIPanel({ onClose }) {
     setInput('')
     setThinking(true)
     try {
-      const reply = await chatWithGemini(history, msg)
+      const reply = await chatWithAI(history, msg)
       setHistory(prev => [
         ...prev,
         { role: 'user', parts: [{ text: msg }] },

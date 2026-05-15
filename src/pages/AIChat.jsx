@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet
 import L from 'leaflet'
 import { useLang } from '../context/LangContext'
 import BottomNav from '../components/BottomNav'
-import { chatWithGemini } from '../utils/gemini'
+import { chatWithAI } from '../utils/api'
 
 // Parse [MAP_UPDATE]...[/MAP_UPDATE] from AI response text
 function parseMapUpdate(text) {
@@ -123,7 +123,7 @@ export default function AIChat() {
     setMessages(prev => [...prev, { role: 'user', text: trimmed }])
     setThinking(true)
     try {
-      const rawReply = await chatWithGemini(history, trimmed)
+      const rawReply = await chatWithAI(history, trimmed)
       const { places, cleanText } = parseMapUpdate(rawReply)
       if (places) {
         setMapPlaces(places)
