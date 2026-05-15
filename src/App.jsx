@@ -47,6 +47,14 @@ const FORCE_MODE = import.meta.env.VITE_MODE // 'mobile' | 'desktop' | undefined
 function detect() {
   if (FORCE_MODE === 'mobile') return true
   if (FORCE_MODE === 'desktop') return false
+  // URL override — /preview loads the iframe with ?view=mobile so demo
+  // recordings always show the mobile build regardless of iframe sizing.
+  try {
+    const sp = new URLSearchParams(window.location.search)
+    const v = sp.get('view')
+    if (v === 'mobile') return true
+    if (v === 'desktop') return false
+  } catch {}
   // Capacitor native app → always mobile
   try { if (window.Capacitor?.isNativePlatform?.()) return true } catch {}
   return window.innerWidth < 768

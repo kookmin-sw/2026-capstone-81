@@ -90,6 +90,18 @@ function IPhoneFrame({ children, w, h }) {
   )
 }
 
+// Append ?view=mobile to whatever path the user typed so the iframe always
+// renders the MobileApp routes (App.jsx detect() respects this).
+function withMobileFlag(path) {
+  try {
+    const u = new URL(path || '/home', window.location.origin)
+    u.searchParams.set('view', 'mobile')
+    return u.pathname + u.search + u.hash
+  } catch {
+    return '/home?view=mobile'
+  }
+}
+
 export default function MobilePreview() {
   const iframeRef = useRef(null)
   const [startUrl, setStartUrl] = useState('/home')
@@ -138,11 +150,11 @@ export default function MobilePreview() {
               aria-hidden
             />
 
-            {/* Mobile site */}
+            {/* Mobile site — forced to MobileApp routes via ?view=mobile */}
             <iframe
               key={navKey}
               ref={iframeRef}
-              src={startUrl}
+              src={withMobileFlag(startUrl)}
               title="Nomadiq Mobile Preview"
               className="w-full h-full border-0 bg-white"
               allow="geolocation; camera; microphone"
