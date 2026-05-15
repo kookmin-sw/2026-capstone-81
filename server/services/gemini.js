@@ -101,7 +101,11 @@ Include real Mongolian place names (with English or Mongolian script), local hid
     generationConfig: {
       maxOutputTokens: config.MAX_TOKENS_PLAN,
       temperature: config.TEMPERATURE_PLAN,
-      responseMimeType: "application/json"
+      responseMimeType: "application/json",
+      // Gemini 2.5 spends output tokens on a hidden "thinking" pass before
+      // emitting the JSON, which truncates multi-day plans. Disable thinking
+      // so the entire token budget goes to the actual answer.
+      thinkingConfig: { thinkingBudget: 0 }
     }
   });
 
@@ -112,10 +116,20 @@ Include real Mongolian place names (with English or Mongolian script), local hid
     .replace(/```\s*/g, '')
     .trim()
 
-  const match = cleaned.match(/\[[\s\S]*\]/)
-  if (!match) throw new Error('No JSON array in response')
-  
-  const plan = JSON.parse(match[0])
+  // responseMimeType=application/json should hand us valid JSON directly,
+  // but the model occasionally wraps the array in an object like
+  // { itinerary: [...] } or appends a stray code-fence. Try the whole string
+  // first, then peel off the inner array if that fails.
+  let plan
+  try {
+    const parsed = JSON.parse(cleaned)
+    plan = Array.isArray(parsed) ? parsed : (parsed.itinerary ?? parsed.plan ?? parsed.days)
+  } catch {
+    const match = cleaned.match(/\[[\s\S]*\]/)
+    if (!match) throw new Error('No JSON array in response')
+    plan = JSON.parse(match[0])
+  }
+  if (!Array.isArray(plan)) throw new Error('Plan is not an array')
 
   // --- 사진 데이터 매칭 로직 ---
   const enrichedPlan = await Promise.all(plan.map(async (day) => {
