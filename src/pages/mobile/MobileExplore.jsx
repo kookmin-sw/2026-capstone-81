@@ -33,20 +33,20 @@ function miniMarker(color) {
 }
 
 const CATS = [
-  { key: 'all',      label: { kr: '전체',    en: 'All',      mn: 'Бүгд'      } },
-  { key: 'nature',   label: { kr: '자연',    en: 'Nature',   mn: 'Байгаль'   } },
-  { key: 'culture',  label: { kr: '문화',    en: 'Culture',  mn: 'Соёл'      } },
-  { key: 'activity', label: { kr: '액티비티', en: 'Activity', mn: 'Адал явдал'} },
-  { key: 'history',  label: { kr: '역사',    en: 'History',  mn: 'Түүх'      } },
-  { key: 'museum',   label: { kr: '박물관',   en: 'Museum',   mn: 'Музей'    } },
+  { key: 'all',      label: { kr: '전체',  en: 'All',      mn: 'Бүгд'    } },
+  { key: 'nature',   label: { kr: '자연',  en: 'Nature',   mn: 'Байгаль' } },
+  { key: 'festival', label: { kr: '축제',  en: 'Festival', mn: 'Наадам'  } }, // 기존 문화·액티비티 → 축제로 통합
+  { key: 'history',  label: { kr: '역사',  en: 'History',  mn: 'Түүх'    } },
+  { key: 'museum',   label: { kr: '박물관', en: 'Museum',   mn: 'Музей'  } },
 ]
 
 const CAT_BADGE = {
-  nature:   { label: { kr: '자연', en: 'Nature', mn: 'Байгаль'    }, bg: 'bg-emerald-500' },
-  culture:  { label: { kr: '문화', en: 'Culture', mn: 'Соёл'      }, bg: 'bg-blue-500'    },
-  activity: { label: { kr: '액티비티', en: 'Activity', mn: 'Адал явдал' }, bg: 'bg-orange-500' },
-  history:  { label: { kr: '역사', en: 'History', mn: 'Түүх'      }, bg: 'bg-purple-500'  },
-  museum:   { label: { kr: '박물관', en: 'Museum', mn: 'Музей'    }, bg: 'bg-amber-500'   },
+  nature:   { label: { kr: '자연', en: 'Nature',   mn: 'Байгаль'    }, bg: 'bg-emerald-500' },
+  festival: { label: { kr: '축제', en: 'Festival', mn: 'Наадам'     }, bg: 'bg-pink-500'    },
+  culture:  { label: { kr: '축제', en: 'Festival', mn: 'Наадам'     }, bg: 'bg-pink-500'    },
+  activity: { label: { kr: '축제', en: 'Festival', mn: 'Наадам'     }, bg: 'bg-pink-500'    },
+  history:  { label: { kr: '역사', en: 'History',  mn: 'Түүх'       }, bg: 'bg-purple-500'  },
+  museum:   { label: { kr: '박물관', en: 'Museum',  mn: 'Музей'     }, bg: 'bg-amber-500'   },
 }
 
 const REGION_LABEL = {
@@ -133,7 +133,8 @@ export default function MobileExplore() {
     const matchCat =
       cat === 'all' ||
       loc.category === cat ||
-      (cat === 'museum' && loc.type === 'museum')
+      (cat === 'museum' && loc.type === 'museum') ||
+      (cat === 'festival' && (loc.category === 'culture' || loc.category === 'activity'))
     const matchQ =
       !q ||
       Object.values(loc.name).some(n => typeof n === 'string' && n.toLowerCase().includes(q.toLowerCase())) ||

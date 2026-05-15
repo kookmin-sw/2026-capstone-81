@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
-import { Home, Compass, Map, Sparkles, User, BookOpen } from 'lucide-react'
+import { Home, Compass, Map, Sparkles, User, BookOpen, MessageCircle } from 'lucide-react'
 
 const tabs = [
   { icon: Home,     path: '/home',    label: { kr: '홈',     en: 'Home',    mn: 'Нүүр'    } },
@@ -16,11 +16,27 @@ export default function MobileLayout({ children }) {
   const location = useLocation()
   const { lang } = useLang()
 
+  const isChatRoute = location.pathname === '/chat'
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FB]">
       <div className="flex-1 pb-20">
         {children}
       </div>
+
+      {/* 챗봇 floating 버튼 — chat 화면 자체에서는 숨김 */}
+      {!isChatRoute && (
+        <button
+          onClick={() => navigate('/chat')}
+          aria-label="AI Chatbot"
+          className="fixed bottom-24 right-4 z-[60] w-14 h-14 bg-gradient-to-br from-primary to-purple-600 rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <MessageCircle size={22} className="text-white" />
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+            <Sparkles size={9} className="text-yellow-900" />
+          </span>
+        </button>
+      )}
 
       {/* 하단 탭바 */}
       <div className="fixed bottom-0 left-0 right-0 z-50">

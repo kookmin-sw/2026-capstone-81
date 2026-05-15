@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
@@ -79,7 +79,7 @@ function makeMuseumIcon(active) {
 const tabs = [
   { icon: Home,     path: '/home',    label: { kr: '홈', en: 'Home', mn: 'Нүүр' } },
   { icon: Compass,  path: '/explore', label: { kr: '탐색', en: 'Explore', mn: 'Хайлт' } },
-  { icon: MapIcon,  path: '/map',     label: { kr: '지도', en: 'Map', mn: 'Зураг' }, active: true },
+  { icon: MapIcon,  path: '/map',     label: { kr: '지도', en: 'Map', mn: 'Зураг' } },
   { icon: Sparkles, path: '/planner', label: { kr: 'AI', en: 'AI', mn: 'AI' } },
   { icon: BookOpen, path: '/blog',    label: { kr: '블로그', en: 'Blog', mn: 'Блог' } },
   { icon: User,     path: '/profile', label: { kr: '프로필', en: 'Profile', mn: 'Профайл' } },
@@ -87,6 +87,7 @@ const tabs = [
 
 export default function MobileMap() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { lang } = useLang()
   const mapRef = useRef(null)
   const [filter, setFilter] = useState('all')
@@ -332,7 +333,7 @@ export default function MobileMap() {
           <div className="flex items-center justify-around px-2 pb-safe pt-1 pb-3">
             {tabs.map(tab => {
               const Icon = tab.icon
-              const active = tab.active
+              const active = location.pathname === tab.path
               return (
                 <button
                   key={tab.path}

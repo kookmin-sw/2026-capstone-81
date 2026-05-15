@@ -20,6 +20,14 @@ self.addEventListener('activate', e => {
   )
 })
 
+// `res.clone()` must be called BEFORE the original response body is consumed.
+// Calling it inside an async `caches.open(...).then(...)` race-conditions with
+// the browser reading `res`, which throws "Response body is already used".
+function cachePut(request, res) {
+  const clone = res.clone()
+  caches.open(CACHE).then(c => c.put(request, clone)).catch(() => {})
+}
+
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
 
@@ -33,7 +41,7 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('open-meteo.com')) {
     e.respondWith(
       fetch(e.request)
-        .then(res => { caches.open(CACHE).then(c => c.put(e.request, res.clone())); return res })
+        .then(res => { cachePut(e.request, res); return res })
         .catch(() => caches.match(e.request))
     )
     return
@@ -43,7 +51,7 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('unsplash.com') || e.request.destination === 'image') {
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()))
+        if (res.ok) cachePut(e.request, res)
         return res
       }))
     )
@@ -54,7 +62,7 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        caches.open(CACHE).then(c => c.put(e.request, res.clone()))
+        cachePut(e.request, res)
         return res
       }))
     )
@@ -65,7 +73,7 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(e.request)
       .then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()))
+        if (res.ok) cachePut(e.request, res)
         return res
       })
       .catch(() => caches.match(e.request).then(cached => cached || caches.match(OFFLINE_URL)))

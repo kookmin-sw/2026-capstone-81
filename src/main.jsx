@@ -14,7 +14,16 @@ CapApp.addListener('backButton', ({ canGoBack }) => {
   }
 })
 
-if ('serviceWorker' in navigator) {
+// Skip Service Worker registration inside the Capacitor native shell — the
+// app is bundled offline-first already and the SW's caching layer caused
+// "Response body is already used" errors that prevented the React root from
+// rendering on Android (white screen on launch).
+const isCapacitor = typeof window !== 'undefined' && (
+  window.Capacitor != null ||
+  /capacitor:\/\//.test(window.location.protocol) ||
+  window.location.hostname === 'localhost' && window.location.protocol === 'https:'
+)
+if ('serviceWorker' in navigator && !isCapacitor) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {})
   })
