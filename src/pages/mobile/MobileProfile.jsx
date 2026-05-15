@@ -33,11 +33,6 @@ export default function MobileProfile() {
       onClick: () => navigate('/saved'),
     },
     {
-      icon: Calendar,
-      label: { kr: '내 일정', en: 'My Itineraries', mn: 'Миний хуваарь' },
-      onClick: () => navigate('/planner'),
-    },
-    {
       icon: Settings,
       label: { kr: '설정', en: 'Settings', mn: 'Тохиргоо' },
       onClick: () => {
