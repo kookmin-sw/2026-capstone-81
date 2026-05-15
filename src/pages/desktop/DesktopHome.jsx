@@ -324,27 +324,48 @@ export default function DesktopHome() {
           </div>
         </div>
 
-        {/* ── AI Planner CTA ── */}
-        <div
-          className="bg-gradient-to-r from-primary to-emerald-400 rounded-2xl p-5 cursor-pointer hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/20 group"
-          onClick={() => navigate('/planner')}
-        >
-          <div className="flex items-center gap-5">
-            <div className="text-5xl flex-shrink-0 group-hover:scale-110 transition-transform">🤖</div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-white font-black text-lg">AI Travel Planner</h3>
-                <span className="bg-white/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">BETA</span>
+        {/* ── AI Planner + Essential Apps CTAs (side by side) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            className="bg-gradient-to-r from-primary to-emerald-400 rounded-2xl p-5 cursor-pointer hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/20 group"
+            onClick={() => navigate('/planner')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-5xl flex-shrink-0 group-hover:scale-110 transition-transform">🤖</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-white font-black text-lg">AI Travel Planner</h3>
+                  <span className="bg-white/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">BETA</span>
+                </div>
+                <p className="text-white/85 text-sm leading-relaxed">
+                  {lang === 'kr' ? 'AI가 맞춤형 몽골 여행 일정을 만들어드려요.' :
+                   lang === 'en' ? 'AI builds a personalized Mongolia itinerary.' :
+                   'AI таны аяллын төлөвлөгөөг гаргана.'}
+                </p>
               </div>
-              <p className="text-white/85 text-sm leading-relaxed">
-                {lang === 'kr' ? '관심사, 기간, 예산에 맞춘 맞춤형 몽골 여행 일정을 AI가 만들어드려요.' :
-                 lang === 'en' ? 'AI crafts a personalized Mongolia itinerary based on your interests, duration, and budget.' :
-                 'Таны сонирхол, хугацаа, төсөвт тохирсон аяллын төлөвлөгөөг AI гаргана.'}
-              </p>
             </div>
-            <button className="bg-white text-primary font-black text-sm px-6 py-3 rounded-xl flex-shrink-0 shadow-md group-hover:shadow-xl group-hover:-translate-y-0.5 transition-all">
-              {lang === 'kr' ? '일정 만들기' : lang === 'en' ? 'Create Itinerary' : 'Төлөвлөгөө үүсгэх'}
-            </button>
+          </div>
+
+          <div
+            className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl p-5 cursor-pointer hover:-translate-y-0.5 transition-all shadow-lg shadow-indigo-500/20 group"
+            onClick={() => navigate('/apps')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-5xl flex-shrink-0 group-hover:scale-110 transition-transform">📱</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-white font-black text-lg">
+                    {lang === 'kr' ? '몽골 필수 앱' : lang === 'en' ? 'Essential Mongolian Apps' : 'Зайлшгүй апп-ууд'}
+                  </h3>
+                  <span className="bg-white/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">GUIDE</span>
+                </div>
+                <p className="text-white/85 text-sm leading-relaxed">
+                  {lang === 'kr' ? '택시, 배달, QPay, 약국 — 현지 생활에 필요한 16개 앱.' :
+                   lang === 'en' ? 'Taxi, delivery, QPay, pharmacy — 16 apps you actually need.' :
+                   'Такси, хүргэлт, QPay — 16 зайлшгүй апп.'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
