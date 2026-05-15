@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
+import { useAuth } from '../../context/AuthContext'
 import { generatePlanWithAI } from '../../utils/api'
-import { Sparkles, Clock, Heart, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon } from 'lucide-react'
+import { saveTrip, defaultTripTitle } from '../../utils/trips'
+import { Sparkles, Clock, Heart, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon, BookmarkPlus, Check, Loader } from 'lucide-react'
 
 function timeIcon(time) {
   const h = parseInt(time?.split(':')[0] ?? '9', 10)
@@ -37,6 +39,29 @@ export default function DesktopPlanner() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [genError, setGenError] = useState('')
+  const [savingTrip, setSavingTrip] = useState(false)
+  const [savedTripId, setSavedTripId] = useState(null)
+  const { user } = useAuth()
+
+  const handleSaveTrip = async () => {
+    if (!result || !user?.uid || savingTrip || savedTripId) return
+    setSavingTrip(true)
+    try {
+      const id = await saveTrip(user.uid, {
+        title: defaultTripTitle(result, days, lang),
+        days,
+        interests,
+        locations: focusLocations,
+        plan: result,
+      })
+      setSavedTripId(id)
+    } catch (err) {
+      console.error('[Planner] save failed', err)
+      setGenError(err.message)
+    } finally {
+      setSavingTrip(false)
+    }
+  }
 
   const clearLocations = () => setSearchParams({})
 
@@ -48,6 +73,7 @@ export default function DesktopPlanner() {
     setLoading(true)
     setResult(null)
     setGenError('')
+    setSavedTripId(null)
     try {
       const interestLabels = interests.map(k => tr(k))
       const plan = await generatePlanWithAI(days, interestLabels, langLabels[lang] || 'Korean', focusLocations.length ? focusLocations : null)
@@ -179,9 +205,28 @@ export default function DesktopPlanner() {
                   <h2 className="text-lg font-black text-gray-900">
                     🗓️ {days}{tr('planner_days_unit')} {tr('custom_itinerary')}
                   </h2>
-                  <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-                    {result.itinerary?.length ?? 0} {lang === 'kr' ? '일' : lang === 'mn' ? 'өдөр' : 'days'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                      {result.itinerary?.length ?? 0} {lang === 'kr' ? '일' : lang === 'mn' ? 'өдөр' : 'days'}
+                    </span>
+                    {user && (
+                      <button
+                        onClick={handleSaveTrip}
+                        disabled={savingTrip || !!savedTripId}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                          savedTripId
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                            : savingTrip
+                              ? 'bg-gray-100 border-gray-200 text-gray-400'
+                              : 'bg-primary text-white border-primary hover:bg-primary-dark active:scale-95'
+                        }`}
+                      >
+                        {savedTripId ? <><Check size={13} /> {lang === 'kr' ? '저장됨' : 'Saved'}</>
+                          : savingTrip ? <><Loader size={13} className="animate-spin" /> {lang === 'kr' ? '저장 중' : 'Saving'}</>
+                          : <><BookmarkPlus size={13} /> {lang === 'kr' ? '저장' : 'Save'}</>}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Day cards */}

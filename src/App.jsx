@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import UserBlogDetail from './pages/UserBlogDetail'
 import WriteBlog from './pages/WriteBlog'
 import AIChat from './pages/AIChat'
+import SavedTrip from './pages/SavedTrip'
 
 // Desktop pages
 import DesktopLayout from './components/desktop/DesktopLayout'
@@ -77,6 +78,7 @@ function DesktopApp() {
         <Route path="/planner" element={<ProtectedRoute><DesktopPlanner /></ProtectedRoute>} />
         <Route path="/blog/:id" element={<ProtectedRoute><DesktopBlogDetail /></ProtectedRoute>} />
         <Route path="/post/:id" element={<UserBlogDetail />} />
+        <Route path="/trip/:id" element={<ProtectedRoute><SavedTrip /></ProtectedRoute>} />
         <Route path="/write" element={<ProtectedRoute><WriteBlog /></ProtectedRoute>} />
         <Route path="/saved" element={<ProtectedRoute><DesktopSaved /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><DesktopProfile /></ProtectedRoute>} />

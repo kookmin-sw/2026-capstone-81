@@ -1,13 +1,30 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
-import { User, Settings, Heart, Calendar, LogOut, ChevronRight, Globe } from 'lucide-react'
+import { watchTrips, deleteTrip } from '../../utils/trips'
+import { User, Settings, Heart, Calendar, LogOut, ChevronRight, Globe, Sparkles, Trash2, MapPin } from 'lucide-react'
 import MobileLayout from './MobileLayout'
 
 export default function MobileProfile() {
   const navigate = useNavigate()
   const { lang, setLang } = useLang()
   const { user, logout } = useAuth()
+  const [savedTrips, setSavedTrips] = useState([])
+
+  // Subscribe to the user's saved AI-planner trips so the list stays live.
+  useEffect(() => {
+    if (!user?.uid) { setSavedTrips([]); return }
+    return watchTrips(user.uid, setSavedTrips)
+  }, [user?.uid])
+
+  const removeTrip = async (tripId) => {
+    if (!user?.uid) return
+    const ok = window.confirm(lang === 'kr' ? '이 일정을 삭제할까요?' : 'Delete this trip?')
+    if (!ok) return
+    try { await deleteTrip(user.uid, tripId) }
+    catch (err) { console.error('[Profile] delete trip', err) }
+  }
 
   const menuItems = [
     {
@@ -107,6 +124,51 @@ export default function MobileProfile() {
             ))}
           </div>
         </div>
+
+        {/* 저장된 AI 일정 */}
+        {user && savedTrips.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-black text-gray-900 flex items-center gap-2">
+                <Sparkles size={15} className="text-primary" />
+                {lang === 'kr' ? '저장된 AI 일정' : lang === 'en' ? 'Saved AI Plans' : 'Хадгалсан AI хуваарь'}
+              </p>
+              <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+                {savedTrips.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {savedTrips.map(t => (
+                <div key={t.id} className="bg-gray-50 rounded-2xl p-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Calendar size={16} className="text-primary" />
+                  </div>
+                  <button
+                    onClick={() => navigate(`/trip/${t.id}`)}
+                    className="flex-1 min-w-0 text-left"
+                  >
+                    <p className="text-xs font-bold text-gray-900 line-clamp-1">
+                      {t.title || (lang === 'kr' ? `${t.days}일 여행` : `${t.days}-day trip`)}
+                    </p>
+                    <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                      <MapPin size={9} />
+                      {t.departureCity || 'Ulaanbaatar'}
+                      {t.budget ? ` · ${t.budget}` : ''}
+                      {t.groupType ? ` · ${t.groupType}` : ''}
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => removeTrip(t.id)}
+                    aria-label="Delete"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 메뉴 */}
         {user && (

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useLang } from '../../context/LangContext'
+import { useAuth } from '../../context/AuthContext'
 import { generatePlanWithAI } from '../../utils/api'
+import { saveTrip, defaultTripTitle } from '../../utils/trips'
 import { Sparkles, Heart, Backpack, Lightbulb, Sunrise, Sun, Moon, Loader,
-  Wallet, Gauge, Users, Bed, Calendar, MapPin } from 'lucide-react'
+  Wallet, Gauge, Users, Bed, Calendar, MapPin, BookmarkPlus, Check } from 'lucide-react'
 import MobileLayout from './MobileLayout'
 
 const INTERESTS = [
@@ -53,6 +55,7 @@ function timeBg(time) {
 
 export default function MobilePlanner() {
   const { lang } = useLang()
+  const { user } = useAuth()
   const [days, setDays] = useState(3)
   const [selectedInterests, setSelectedInterests] = useState([])
   const [budget, setBudget] = useState('mid')
@@ -64,6 +67,34 @@ export default function MobilePlanner() {
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [savedId, setSavedId] = useState(null)
+
+  // Re-generating clears any previous "Saved" badge so the user can save the
+  // new plan separately.
+  const resetSavedState = () => setSavedId(null)
+
+  const handleSaveTrip = async () => {
+    if (!plan || !user?.uid || saving || savedId) return
+    setSaving(true)
+    try {
+      const id = await saveTrip(user.uid, {
+        title: defaultTripTitle(plan, days, lang),
+        days,
+        interests: selectedInterests,
+        budget, pace, groupType, accommodation,
+        startDate: startDate || null,
+        departureCity: departureCity.trim() || null,
+        plan,
+      })
+      setSavedId(id)
+    } catch (err) {
+      console.error('[Planner] save failed', err)
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const toggleInterest = (key) => {
     setSelectedInterests(prev =>
@@ -76,6 +107,7 @@ export default function MobilePlanner() {
     setLoading(true)
     setError(null)
     setPlan(null)
+    resetSavedState()
     try {
       const langLabel = lang === 'kr' ? 'Korean' : lang === 'en' ? 'English' : 'Mongolian'
       const interestLabels = selectedInterests.map(k => INTERESTS.find(i => i.key === k)?.label.en || k)
@@ -273,6 +305,28 @@ export default function MobilePlanner() {
         {/* Result */}
         {plan && (
           <div className="space-y-3">
+            {/* Save trip button — only when signed in */}
+            {user && (
+              <button
+                onClick={handleSaveTrip}
+                disabled={saving || !!savedId}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border transition-all ${
+                  savedId
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                    : saving
+                      ? 'bg-gray-100 border-gray-200 text-gray-400'
+                      : 'bg-white border-primary/30 text-primary hover:bg-primary/5 active:scale-[0.99]'
+                }`}
+              >
+                {savedId ? (
+                  <><Check size={16} /> {lang === 'kr' ? '저장됨' : lang === 'en' ? 'Saved' : 'Хадгалсан'}</>
+                ) : saving ? (
+                  <><Loader size={16} className="animate-spin" /> {lang === 'kr' ? '저장 중...' : 'Saving...'}</>
+                ) : (
+                  <><BookmarkPlus size={16} /> {lang === 'kr' ? '이 일정 저장하기' : lang === 'en' ? 'Save this plan' : 'Хадгалах'}</>
+                )}
+              </button>
+            )}
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-lg font-black text-gray-900">
                 🗓️ {days}{lang === 'kr' ? '일' : lang === 'mn' ? ' өдөр' : ' day'} {lang === 'kr' ? '일정' : lang === 'en' ? 'Itinerary' : 'Хуваарь'}
