@@ -4,6 +4,33 @@ import { useLang } from '../context/LangContext'
 import { mongolianApps, APP_CATEGORIES } from '../data/mongolianApps'
 import { ArrowLeft, ExternalLink, Smartphone, Apple, Globe } from 'lucide-react'
 
+// Clearbit's Logo API returns the official logo of a company by domain.
+// It's free, no key required, and we can let the <img> simply hide itself
+// on error so the emoji + colored tile shows through.
+function logoUrl(app) {
+  return app.logoDomain ? `https://logo.clearbit.com/${app.logoDomain}` : null
+}
+
+function AppLogo({ app }) {
+  const [failed, setFailed] = useState(false)
+  const src = logoUrl(app)
+  return (
+    <div className={`w-14 h-14 rounded-2xl ${app.color} flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden relative`}>
+      <span className="text-2xl absolute">{app.icon}</span>
+      {src && !failed && (
+        <img
+          src={src}
+          alt={app.name.en}
+          className="relative w-full h-full object-contain bg-white p-1"
+          onError={() => setFailed(true)}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      )}
+    </div>
+  )
+}
+
 const TITLE = { kr: '몽골 필수 앱', en: 'Essential Mongolian Apps', mn: 'Зайлшгүй апп-ууд' }
 const SUB = {
   kr: '여행 중 꼭 알아두면 좋은 현지 앱 모음',
@@ -65,9 +92,7 @@ export default function MongolianApps() {
           <div key={app.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {/* Top row: icon + name + category */}
             <div className="flex items-start gap-3 p-4">
-              <div className={`w-14 h-14 rounded-2xl ${app.color} flex items-center justify-center flex-shrink-0 text-2xl shadow-md`}>
-                {app.icon}
-              </div>
+              <AppLogo app={app} />
               <div className="flex-1 min-w-0">
                 <h3 className="font-black text-gray-900 text-base leading-tight">{app.name[lang] ?? app.name.en}</h3>
                 <p className="text-xs text-primary font-semibold mt-0.5">
