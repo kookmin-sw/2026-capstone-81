@@ -138,29 +138,12 @@ export default function MobileHome() {
 
         {/* ── 헤더 ── */}
         <div className="bg-white px-4 pt-12 pb-4 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            {/* 왼쪽: 햄버거 + 로고 */}
-            <div className="flex items-center gap-2.5">
-              <button className="flex flex-col gap-1.5 p-1">
-                <span className="block w-5 h-0.5 bg-gray-700 rounded-full" />
-                <span className="block w-5 h-0.5 bg-gray-700 rounded-full" />
-                <span className="block w-3.5 h-0.5 bg-gray-700 rounded-full" />
-              </button>
-              <NomadLogoIcon size={26} />
-              <NomadLogoText className="text-base" />
-            </div>
-            {/* 오른쪽: 벨 + 아바타 */}
-            <div className="flex items-center gap-2">
-              <button className="w-8 h-8 flex items-center justify-center">
-                <Bell size={19} className="text-gray-600" />
-              </button>
-              <button onClick={() => navigate('/profile')} className="w-9 h-9 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center">
-                {user?.photoURL
-                  ? <img src={user.photoURL} className="w-full h-full object-cover" alt="" />
-                  : <span className="text-primary text-sm font-bold">{user?.displayName?.[0] ?? '?'}</span>
-                }
-              </button>
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            {/* 중앙: 로고만 */}
+            <button onClick={() => navigate('/home')} className="flex items-center gap-2">
+              <NomadLogoIcon size={28} />
+              <NomadLogoText className="text-lg" />
+            </button>
           </div>
 
           {/* 인사 */}

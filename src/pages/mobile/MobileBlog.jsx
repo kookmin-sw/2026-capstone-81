@@ -4,8 +4,8 @@ import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
 import { blogs } from '../../data/blogs'
 import { db } from '../../firebase'
-import { collection, query as fbQuery, orderBy, onSnapshot } from 'firebase/firestore'
-import { Heart, MessageCircle, Bookmark, Clock } from 'lucide-react'
+import { collection, query as fbQuery, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
+import { Heart, MessageCircle, Bookmark, Clock, PenSquare, Trash2 } from 'lucide-react'
 import MobileLayout from './MobileLayout'
 
 const TABS = [
@@ -68,9 +68,18 @@ export default function MobileBlog() {
 
         {/* 헤더 */}
         <div className="bg-white px-4 pt-12 pb-0">
-          <h1 className="text-xl font-black text-gray-900 mb-3">
-            {lang === 'kr' ? '블로그' : lang === 'en' ? 'Blog' : 'Блог'}
-          </h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-black text-gray-900">
+              {lang === 'kr' ? '블로그' : lang === 'en' ? 'Blog' : 'Блог'}
+            </h1>
+            <button
+              onClick={() => navigate('/write')}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-white text-xs font-bold rounded-full shadow-sm active:scale-95 transition-transform"
+            >
+              <PenSquare size={13} />
+              {lang === 'kr' ? '글 쓰기' : lang === 'en' ? 'Write' : 'Бичих'}
+            </button>
+          </div>
 
           {/* 탭 */}
           <div className="flex border-b border-gray-100">
@@ -110,11 +119,26 @@ export default function MobileBlog() {
               ? estimateReadTime(post.content, lang)
               : (post.readTime?.[lang] ?? post.readTime?.kr ?? '5분')
 
+            const canDelete = isUser && user && (post.authorId === user.uid)
+
+            const handleDelete = async (e) => {
+              e.stopPropagation()
+              if (!db || !post.id) return
+              const ok = window.confirm(lang === 'kr' ? '이 글을 삭제할까요?' : 'Delete this post?')
+              if (!ok) return
+              try {
+                await deleteDoc(doc(db, 'blogs', post.id))
+              } catch (err) {
+                console.error('[Blog] delete failed', err)
+                alert(lang === 'kr' ? '삭제 실패' : 'Delete failed')
+              }
+            }
+
             return (
               <div
                 key={`${isUser ? 'u' : 'b'}-${post.id ?? i}`}
                 onClick={() => navigate(isUser ? `/post/${post.id}` : `/blog/${post.id}`)}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer flex gap-3 p-3"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer flex gap-3 p-3 relative"
               >
                 {image && (
                   <img
@@ -144,6 +168,15 @@ export default function MobileBlog() {
                     </span>
                   </div>
                 </div>
+                {canDelete && (
+                  <button
+                    onClick={handleDelete}
+                    aria-label="Delete"
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-gray-50 hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
               </div>
             )
           })}
