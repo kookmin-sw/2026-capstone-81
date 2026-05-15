@@ -366,6 +366,32 @@ export default function MobileHome() {
           </div>
         </div>
 
+        {/* ── 몽골 필수 앱 CTA ── */}
+        <div
+          onClick={() => navigate('/apps')}
+          className="mx-4 mt-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform border border-indigo-100"
+        >
+          <div className="flex items-center gap-3 p-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-black text-gray-900 text-sm">
+                  {lang === 'kr' ? '몽골 필수 앱' : lang === 'en' ? 'Essential Apps' : 'Зайлшгүй апп'}
+                </span>
+                <span className="bg-indigo-500/10 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full">GUIDE</span>
+              </div>
+              <p className="text-gray-500 text-xs leading-relaxed">
+                {lang === 'mn' ? 'УБ-д амьдрахад хэрэгтэй такси, хүргэлт, QPay, эмийн сан гэх мэт апп-ууд.' :
+                 lang === 'kr' ? '택시, 배달, QPay, 약국 등 울란바토르 생활에 필요한 앱 모음.' :
+                 'UBcab, TokTok, QPay, Monos and other apps you actually need in UB.'}
+              </p>
+              <div className="mt-3 inline-flex items-center gap-1.5 text-indigo-600 text-xs font-bold">
+                {lang === 'mn' ? 'Үзэх' : lang === 'kr' ? '앱 보기' : 'See apps'} →
+              </div>
+            </div>
+            <div className="text-4xl flex-shrink-0">📱</div>
+          </div>
+        </div>
+
         {/* ── 지금 인기있는 ── */}
         <div className="mt-5 px-4">
           <div className="flex items-center gap-2 mb-3">
