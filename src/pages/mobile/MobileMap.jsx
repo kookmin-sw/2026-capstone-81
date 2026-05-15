@@ -4,7 +4,7 @@ import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
 import { provinceLocations } from '../../data/provinceLocations'
-import { Star, MapPin, Clock, CalendarDays, ChevronRight, Search, Home, Compass, Sparkles, User, Map as MapIcon, Layers, X, BookOpen } from 'lucide-react'
+import { Star, MapPin, Clock, CalendarDays, ChevronRight, Search, Home, Compass, Sparkles, User, Map as MapIcon, Layers, X, BookOpen, ArrowLeft } from 'lucide-react'
 
 const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 const CAT_COLORS = { nature: '#22c55e', culture: '#3b82f6', activity: '#f97316' }
@@ -143,7 +143,15 @@ export default function MobileMap() {
 
       {/* Top filter bar */}
       <div className="absolute top-0 inset-x-0 z-20 pt-12 px-4 pb-3 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100">
-        <div className="flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-2.5 mb-3">
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+          >
+            <ArrowLeft size={16} className="text-gray-700" />
+          </button>
+          <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-2.5">
           <Search size={14} className="text-gray-400 flex-shrink-0" />
           <input
             type="text"
@@ -155,6 +163,7 @@ export default function MobileMap() {
           {search && (
             <button onClick={() => setSearch('')} className="text-gray-400 text-xs flex-shrink-0 px-1">✕</button>
           )}
+          </div>
         </div>
         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {CATS.map(cat => (
