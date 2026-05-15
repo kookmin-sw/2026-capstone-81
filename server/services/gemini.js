@@ -5,7 +5,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.V
 
 export async function sendChatMessage(message, history = []) {
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     systemInstruction: config.SYSTEM_PROMPT 
   });
 
@@ -92,7 +92,7 @@ Return ONLY a valid JSON array (no markdown, no extra text) in the format below.
 Include real Mongolian place names (with English or Mongolian script), local hidden gems, and practical survival tips.`
 
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     systemInstruction: config.SYSTEM_PROMPT 
   });
 
