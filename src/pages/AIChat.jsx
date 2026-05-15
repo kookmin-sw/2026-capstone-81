@@ -146,7 +146,7 @@ export default function AIChat() {
   const hasMap = mapPlaces.length > 0
 
   return (
-    <div className="flex flex-col h-full bg-[#F8F9FB]">
+    <div className="flex flex-col h-[100dvh] bg-[#F8F9FB]">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <button

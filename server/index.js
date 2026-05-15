@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 import corsMiddleware from './middleware/cors.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { validateChat, validatePlan } from './middleware/validate.js'
-import { sendChatMessage, generateTravelPlan } from './services/bedrock.js'
+import { sendChatMessage, generateTravelPlan } from './services/gemini.js'
 import config from './config.js'
 
 dotenv.config()

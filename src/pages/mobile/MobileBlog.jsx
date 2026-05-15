@@ -14,6 +14,29 @@ const TABS = [
   { key: 'following', label: { kr: '팔로잉',  en: 'Following', mn: 'Дагагчид' } },
 ]
 
+// Estimate read time from content length (~400 chars/min for mixed CJK)
+function estimateReadTime(content, lang) {
+  const text = typeof content === 'string' ? content : ''
+  const mins = Math.max(1, Math.round(text.length / 400))
+  return lang === 'kr' ? `${mins}분` : lang === 'mn' ? `${mins} мин` : `${mins} min`
+}
+
+// "X minutes/hours/days ago" relative time
+function timeAgo(date, lang) {
+  if (!date) return ''
+  const d = date instanceof Date ? date : new Date(date)
+  if (isNaN(d.getTime())) return ''
+  const diffMs = Date.now() - d.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHr = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHr / 24)
+  if (diffMin < 1) return lang === 'kr' ? '방금' : lang === 'mn' ? 'дөнгөж' : 'just now'
+  if (diffMin < 60) return lang === 'kr' ? `${diffMin}분 전` : lang === 'mn' ? `${diffMin} мин өмнө` : `${diffMin}m ago`
+  if (diffHr < 24) return lang === 'kr' ? `${diffHr}시간 전` : lang === 'mn' ? `${diffHr} цагийн өмнө` : `${diffHr}h ago`
+  if (diffDay < 30) return lang === 'kr' ? `${diffDay}일 전` : lang === 'mn' ? `${diffDay} өдрийн өмнө` : `${diffDay}d ago`
+  return d.toLocaleDateString(lang === 'kr' ? 'ko' : lang === 'mn' ? 'mn' : 'en')
+}
+
 export default function MobileBlog() {
   const navigate = useNavigate()
   const { lang } = useLang()
@@ -76,13 +99,16 @@ export default function MobileBlog() {
             const excerpt = isUser ? post.content?.slice(0, 80) : (post.excerpt?.[lang] ?? '')
             const image = post.image ?? ''
             const author = post.author ?? post.authorName ?? ''
+            const createdDate = isUser ? post.createdAt?.toDate?.() : null
             const date = isUser
-              ? post.createdAt?.toDate?.()?.toLocaleDateString('ko') ?? ''
+              ? (createdDate ? timeAgo(createdDate, lang) : '')
               : post.date ?? ''
             const likes = post.likes ?? 0
-            const comments = post.comments ?? Math.floor(Math.random() * 10)
-            const bookmarks = post.bookmarks ?? Math.floor(Math.random() * 20)
-            const readTime = isUser ? '3분' : (post.readTime?.[lang] ?? post.readTime?.kr ?? '5분')
+            const comments = isUser ? (post.comments ?? 0) : (post.comments ?? 0)
+            const bookmarks = isUser ? (post.bookmarks ?? 0) : (post.bookmarks ?? 0)
+            const readTime = isUser
+              ? estimateReadTime(post.content, lang)
+              : (post.readTime?.[lang] ?? post.readTime?.kr ?? '5분')
 
             return (
               <div

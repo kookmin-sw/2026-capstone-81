@@ -19,33 +19,33 @@ describe('errorHandler', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'INTERNAL' }))
   })
 
-  it('returns 500 AUTH_ERROR for CredentialsProviderError', () => {
+  it('returns 500 AUTH_ERROR for invalid API key', () => {
     const { req, res, next } = mockReqRes()
-    const err = Object.assign(new Error('no credentials'), { name: 'CredentialsProviderError' })
+    const err = Object.assign(new Error('API key not valid'), { status: 401 })
     errorHandler(err, req, res, next)
     expect(res.status).toHaveBeenCalledWith(500)
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'AUTH_ERROR' }))
   })
 
-  it('returns 500 AUTH_ERROR for ExpiredTokenException', () => {
+  it('returns 500 AUTH_ERROR for permission denied', () => {
     const { req, res, next } = mockReqRes()
-    const err = Object.assign(new Error('token expired'), { name: 'ExpiredTokenException' })
+    const err = Object.assign(new Error('permission denied'), { status: 403 })
     errorHandler(err, req, res, next)
     expect(res.status).toHaveBeenCalledWith(500)
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'AUTH_ERROR' }))
   })
 
-  it('returns 429 RATE_LIMIT for ThrottlingException', () => {
+  it('returns 429 RATE_LIMIT for quota exceeded message', () => {
     const { req, res, next } = mockReqRes()
-    const err = Object.assign(new Error('throttled'), { name: 'ThrottlingException' })
+    const err = new Error('Quota exceeded for requests')
     errorHandler(err, req, res, next)
     expect(res.status).toHaveBeenCalledWith(429)
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'RATE_LIMIT' }))
   })
 
-  it('returns 429 RATE_LIMIT when httpStatusCode is 429', () => {
+  it('returns 429 RATE_LIMIT when status is 429', () => {
     const { req, res, next } = mockReqRes()
-    const err = Object.assign(new Error('too many'), { $metadata: { httpStatusCode: 429 } })
+    const err = Object.assign(new Error('too many'), { status: 429 })
     errorHandler(err, req, res, next)
     expect(res.status).toHaveBeenCalledWith(429)
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'RATE_LIMIT' }))
@@ -66,20 +66,20 @@ describe('errorHandler', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'TIMEOUT' }))
   })
 
-  it('returns 502 BEDROCK_ERROR for ModelErrorException', () => {
+  it('returns 502 AI_ERROR for GoogleGenerativeAIError', () => {
     const { req, res, next } = mockReqRes()
-    const err = Object.assign(new Error('model error'), { name: 'ModelErrorException' })
+    const err = Object.assign(new Error('model error'), { name: 'GoogleGenerativeAIError' })
     errorHandler(err, req, res, next)
     expect(res.status).toHaveBeenCalledWith(502)
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'BEDROCK_ERROR' }))
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'AI_ERROR' }))
   })
 
-  it('returns 502 BEDROCK_ERROR when httpStatusCode >= 500', () => {
+  it('returns 502 AI_ERROR when status >= 500', () => {
     const { req, res, next } = mockReqRes()
-    const err = Object.assign(new Error('server error'), { $metadata: { httpStatusCode: 503 } })
+    const err = Object.assign(new Error('server error'), { status: 503 })
     errorHandler(err, req, res, next)
     expect(res.status).toHaveBeenCalledWith(502)
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'BEDROCK_ERROR' }))
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'AI_ERROR' }))
   })
 
   it('returns 400 VALIDATION for validation errors', () => {

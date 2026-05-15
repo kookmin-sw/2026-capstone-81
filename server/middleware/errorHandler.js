@@ -23,7 +23,7 @@ export function errorHandler(err, req, res, next) {
  * Classify an error into HTTP status, error code, and user-friendly message
  */
 function classifyError(err) {
-  // AWS credential errors
+  // API key / auth errors
   if (isCredentialError(err)) {
     return {
       status: 500,
@@ -50,11 +50,11 @@ function classifyError(err) {
     }
   }
 
-  // Bedrock / model errors
-  if (isBedrockError(err)) {
+  // AI model / upstream errors
+  if (isAIError(err)) {
     return {
       status: 502,
-      code: 'BEDROCK_ERROR',
+      code: 'AI_ERROR',
       message: 'AI 서비스에 일시적 문제가 있습니다'
     }
   }
@@ -86,21 +86,16 @@ function classifyError(err) {
 }
 
 function isCredentialError(err) {
-  const credentialNames = [
-    'CredentialsProviderError',
-    'InvalidIdentityToken',
-    'ExpiredTokenException',
-    'UnrecognizedClientException'
-  ]
-  return credentialNames.includes(err.name) ||
-    err.code === 'CREDENTIALS_ERROR' ||
-    (err.message && err.message.includes('credentials'))
+  return err.code === 'CREDENTIALS_ERROR' ||
+    err.status === 401 ||
+    err.status === 403 ||
+    (err.message && /api[ _-]?key|unauthorized|permission denied|credentials/i.test(err.message))
 }
 
 function isThrottlingError(err) {
-  return err.name === 'ThrottlingException' ||
-    err.code === 'ThrottlingException' ||
-    err.$metadata?.httpStatusCode === 429
+  return err.status === 429 ||
+    err.code === 'RATE_LIMIT' ||
+    (err.message && /quota|rate limit|too many requests/i.test(err.message))
 }
 
 function isTimeoutError(err) {
@@ -111,17 +106,14 @@ function isTimeoutError(err) {
     (err.message && err.message.includes('timeout'))
 }
 
-function isBedrockError(err) {
-  const bedrockNames = [
-    'ModelTimeoutException',
-    'ModelNotReadyException',
-    'ModelErrorException',
-    'ServiceUnavailableException',
-    'InternalServerException',
-    'ValidationException'
+function isAIError(err) {
+  const aiErrorNames = [
+    'GoogleGenerativeAIError',
+    'GoogleGenerativeAIFetchError',
+    'GoogleGenerativeAIResponseError'
   ]
-  return bedrockNames.includes(err.name) ||
-    (err.$metadata?.httpStatusCode >= 500 && !isCredentialError(err))
+  return aiErrorNames.includes(err.name) ||
+    (err.status >= 500 && !isCredentialError(err))
 }
 
 function isValidationError(err) {

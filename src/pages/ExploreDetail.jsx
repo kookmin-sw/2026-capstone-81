@@ -6,6 +6,8 @@ import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
 import { locations } from '../data/locations'
+import { museums } from '../data/museums'
+import { useWikiImage } from '../hooks/useWikiImage'
 import BottomNav from '../components/BottomNav'
 
 export default function ExploreDetail() {
@@ -28,17 +30,26 @@ export default function ExploreDetail() {
     if (liked) {
       await deleteDoc(ref).catch(() => {})
     } else {
-      await setDoc(ref, { locationId: Number(id), savedAt: serverTimestamp() }).catch(() => {})
+      await setDoc(ref, { locationId: id, savedAt: serverTimestamp() }).catch(() => {})
     }
     setLiked(p => !p)
   }
 
   const [activeTab, setActiveTab] = useState('intro')
 
-  const loc = locations.find(l => l.id === Number(id))
+  // Find in main locations (numeric ID) OR museums (string ID like 'mus-arkhangai' / 'ub-3')
+  const numericId = Number(id)
+  const loc =
+    locations.find(l => l.id === numericId) ||
+    museums.find(m => m.id === id)
   if (!loc) return <div className="p-8 text-center text-gray-400">{tr('no_results')}</div>
 
-  const related = locations.filter(l => l.id !== loc.id && l.category === loc.category).slice(0, 3)
+  // Related: same category, exclude self. For museums, show other museums.
+  const pool = loc.type === 'museum' ? museums : locations
+  const related = pool.filter(l => l.id !== loc.id && l.category === loc.category).slice(0, 3)
+
+  // Real Wikipedia photo (fallback: loc.image placeholder while loading or if no Wiki page)
+  const heroImage = useWikiImage(loc.wikiTitle, loc.image)
 
   const TABS = [
     { key: 'intro',    label: { kr: '소개',   en: 'About',   mn: 'Тойм'   } },
@@ -51,7 +62,7 @@ export default function ExploreDetail() {
     <div className="flex flex-col h-full bg-[#F8F9FB]">
       {/* Hero */}
       <div className="relative h-64 flex-shrink-0">
-        <img src={loc.image} alt={loc.name[lang]} className="w-full h-full object-cover" />
+        <img src={heroImage} alt={loc.name[lang]} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
         {/* Top bar */}
@@ -140,7 +151,7 @@ export default function ExploreDetail() {
                   {lang === 'kr' ? '난이도' : lang === 'en' ? 'Difficulty' : 'Хүнд хэцүү'}
                 </p>
                 <p className="text-xs font-bold text-primary">
-                  {lang === 'kr' ? '쉬움' : lang === 'en' ? 'Easy' : 'Хялбар'}
+                  {loc.difficulty?.[lang] ?? (lang === 'kr' ? '쉬움' : lang === 'en' ? 'Easy' : 'Хялбар')}
                 </p>
               </div>
             </div>
@@ -150,28 +161,20 @@ export default function ExploreDetail() {
               <p className="text-sm text-gray-600 leading-relaxed">{loc.description[lang]}</p>
             </div>
 
-            {/* 다른 여행자 후기 */}
+            {/* Traveler Reviews — empty state until real reviews are wired to Firestore */}
             <div className="bg-white mt-2 px-4 py-4">
               <h2 className="text-sm font-black text-gray-900 mb-3">
                 {lang === 'kr' ? '다른 여행자 후기' : lang === 'en' ? 'Traveler Reviews' : 'Аялагчдын сэтгэгдэл'}
               </h2>
-              {[
-                { name: 'Traveler_J', time: lang === 'kr' ? '3일 전' : '3d ago', text: lang === 'kr' ? '정말 아름다운 곳이에요! 꼭 다시 오고 싶어요.' : 'Absolutely beautiful! Would love to visit again.' },
-                { name: 'NomadMN', time: lang === 'kr' ? '1주일 전' : '1w ago', text: lang === 'kr' ? '몽골에서 가장 인상 깊었던 장소입니다.' : 'The most impressive place in Mongolia.' },
-              ].map((r, i) => (
-                <div key={i} className="flex gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
-                    {r.name[0]}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-bold text-gray-800">{r.name}</span>
-                      <span className="text-[10px] text-gray-400">{r.time}</span>
-                    </div>
-                    <p className="text-xs text-gray-600 leading-relaxed">{r.text}</p>
-                  </div>
-                </div>
-              ))}
+              <div className="text-center py-6 text-gray-400">
+                <div className="text-3xl mb-2">💬</div>
+                <p className="text-xs font-semibold">
+                  {lang === 'kr' ? '아직 작성된 후기가 없어요' : lang === 'en' ? 'No reviews yet' : 'Одоогоор сэтгэгдэл байхгүй'}
+                </p>
+                <p className="text-[10px] mt-1 text-gray-300">
+                  {lang === 'kr' ? '첫 후기를 남겨보세요' : lang === 'en' ? 'Be the first to share your experience' : 'Эхний сэтгэгдлийг үлдээгээрэй'}
+                </p>
+              </div>
             </div>
           </>
         )}

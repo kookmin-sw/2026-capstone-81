@@ -11,6 +11,7 @@ const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 const categoryColors = { nature: '#22c55e', culture: '#3b82f6', activity: '#f97316' }
 const categoryEmoji = { nature: '🏔️', culture: '🏛️', activity: '🐎' }
+const chipEmoji = { all: '🌍', nature: '🏔️', culture: '🏛️', activity: '🐎' }
 
 const MAP_OPTIONS = {
   disableDefaultUI: false,
@@ -43,6 +44,20 @@ function makeProvinceIcon(selected) {
   const svg = `<svg width="${size}" height="${size}" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="11" cy="11" r="10" fill="${color}" stroke="white" stroke-width="2"/>
     <circle cx="11" cy="11" r="4" fill="white"/>
+  </svg>`
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}` }
+}
+
+function makeMuseumIcon(selected) {
+  const color = selected ? '#b45309' : '#f59e0b'
+  const size = selected ? 28 : 22
+  // Square shape with rounded corners to differentiate from circular province dots
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="3" width="18" height="16" rx="2" fill="${color}" stroke="white" stroke-width="2"/>
+    <rect x="6" y="9" width="2" height="6" fill="white"/>
+    <rect x="10" y="9" width="2" height="6" fill="white"/>
+    <rect x="14" y="9" width="2" height="6" fill="white"/>
+    <polygon points="2,5 11,1 20,5" fill="${color}" stroke="white" stroke-width="2" stroke-linejoin="round"/>
   </svg>`
   return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}` }
 }
@@ -190,7 +205,9 @@ export default function DesktopMap() {
                 <MapPin size={12} className="text-primary" />
                 {lang === 'kr' ? '지역 (아이막)' : lang === 'en' ? 'Region (Aimag)' : 'Аймаг'}
               </p>
-              <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded-full">21</span>
+              <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded-full">
+                {REGIONS.filter(r => r.key !== 'all').length}
+              </span>
             </div>
             <div className="space-y-0.5 max-h-64 overflow-y-auto pr-1">
               {REGIONS.map(r => (
@@ -354,6 +371,27 @@ export default function DesktopMap() {
         onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}
         onMouseLeave={() => setHoverMarkerId(null)}
       >
+        {/* Floating category quick-filter chips (Google Maps style) */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 px-2 py-1.5">
+          {CATEGORIES.map(c => {
+            const active = filter === c.key
+            return (
+              <button
+                key={c.key}
+                onClick={() => setFilter(c.key)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                  active
+                    ? 'bg-primary text-white shadow-sm shadow-primary/30'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <span className="text-sm leading-none">{chipEmoji[c.key]}</span>
+                {c.label[lang]}
+              </button>
+            )
+          })}
+        </div>
+
         {/* Custom hover tooltip — pointerEvents:none so it never blocks map clicks */}
         {hoverMarkerId && (() => {
           const isLoc = hoverMarkerId.startsWith('loc-')
@@ -431,7 +469,7 @@ export default function DesktopMap() {
               <Marker
                 key={`prov-${loc.id}`}
                 position={{ lat: loc.lat, lng: loc.lng }}
-                icon={makeProvinceIcon(isSelected(loc.id))}
+                icon={loc.type === 'museum' ? makeMuseumIcon(isSelected(loc.id)) : makeProvinceIcon(isSelected(loc.id))}
                 onClick={() => { toggleItem({ id: loc.id, name: loc.name, lat: loc.lat, lng: loc.lng, province: loc.province }); setActiveMarkerId(`prov-${loc.id}`); setHoverMarkerId(null) }}
                 onMouseOver={() => setHoverMarkerId(`prov-${loc.id}`)}
                 onMouseOut={() => setHoverMarkerId(null)}
@@ -504,6 +542,14 @@ export default function DesktopMap() {
               <span className="text-xs text-gray-600">{label[lang]}</span>
             </div>
           ))}
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#8b5cf6' }} />
+            <span className="text-xs text-gray-600">{lang === 'kr' ? '명소' : lang === 'en' ? 'Sites' : 'Дурсгал'}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
+            <span className="text-xs text-gray-600">{lang === 'kr' ? '박물관' : lang === 'en' ? 'Museum' : 'Музей'}</span>
+          </div>
         </div>
 
         {/* Hint */}

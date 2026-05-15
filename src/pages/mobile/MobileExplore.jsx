@@ -1,9 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 import { useLang } from '../../context/LangContext'
 import { locations } from '../../data/locations'
+import { museums } from '../../data/museums'
+import { useWikiImage } from '../../hooks/useWikiImage'
 import { Search, SlidersHorizontal, Star, MapPin, Heart, ChevronRight, Navigation } from 'lucide-react'
 import MobileLayout from './MobileLayout'
+
+const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+const CAT_COLORS = { nature: '#22c55e', culture: '#3b82f6', activity: '#f97316', history: '#a855f7' }
+
+const MINI_MAP_OPTIONS = {
+  disableDefaultUI: true,
+  zoomControl: false,
+  gestureHandling: 'none',
+  clickableIcons: false,
+  draggable: false,
+  keyboardShortcuts: false,
+  styles: [
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  ],
+}
+
+function miniMarker(color) {
+  const svg = `<svg width="22" height="28" viewBox="0 0 36 47" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 0C8.059 0 0 8.059 0 18C0 32 18 47 18 47C18 47 36 32 36 18C36 8.059 27.941 0 18 0Z" fill="${color}"/>
+    <circle cx="18" cy="18" r="8" fill="white"/>
+  </svg>`
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}` }
+}
 
 const CATS = [
   { key: 'all',      label: { kr: '전체',    en: 'All',      mn: 'Бүгд'      } },
@@ -11,6 +38,7 @@ const CATS = [
   { key: 'culture',  label: { kr: '문화',    en: 'Culture',  mn: 'Соёл'      } },
   { key: 'activity', label: { kr: '액티비티', en: 'Activity', mn: 'Адал явдал'} },
   { key: 'history',  label: { kr: '역사',    en: 'History',  mn: 'Түүх'      } },
+  { key: 'museum',   label: { kr: '박물관',   en: 'Museum',   mn: 'Музей'    } },
 ]
 
 const CAT_BADGE = {
@@ -18,6 +46,7 @@ const CAT_BADGE = {
   culture:  { label: { kr: '문화', en: 'Culture', mn: 'Соёл'      }, bg: 'bg-blue-500'    },
   activity: { label: { kr: '액티비티', en: 'Activity', mn: 'Адал явдал' }, bg: 'bg-orange-500' },
   history:  { label: { kr: '역사', en: 'History', mn: 'Түүх'      }, bg: 'bg-purple-500'  },
+  museum:   { label: { kr: '박물관', en: 'Museum', mn: 'Музей'    }, bg: 'bg-amber-500'   },
 }
 
 const REGION_LABEL = {
@@ -29,14 +58,53 @@ const REGION_LABEL = {
 const MOCK_DIST    = { 1: 0,   2: 540, 3: 55, 4: 646, 5: 460, 6: 10, 7: 360, 8: 400 }
 const MOCK_REVIEWS = { 1: 186, 2: 342, 3: 278, 4: 210, 5: 182, 6: 94, 7: 164, 8: 128 }
 
-const MAP_PINS = [
-  { x: '20%', y: '30%', n: 12, c: 'bg-primary'    },
-  { x: '55%', y: '42%', n: 8,  c: 'bg-primary'    },
-  { x: '38%', y: '65%', n: 3,  c: 'bg-orange-400' },
-  { x: '72%', y: '22%', n: 5,  c: 'bg-blue-500'   },
-  { x: '48%', y: '78%', n: 2,  c: 'bg-primary'    },
-  { x: '82%', y: '60%', n: 4,  c: 'bg-purple-500' },
-]
+function ListingCard({ loc, lang, liked, province, dist, rev, onClick, onToggleLike }) {
+  const badgeKey = loc.type === 'museum' ? 'museum' : loc.category
+  const badge = CAT_BADGE[badgeKey] ?? CAT_BADGE.nature
+  const img = useWikiImage(loc.wikiTitle, loc.image)
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-2xl overflow-hidden shadow-sm flex cursor-pointer active:scale-[0.99] transition-transform"
+    >
+      <div className="relative w-24 h-24 flex-shrink-0">
+        <img src={img} alt={loc.name[lang]} className="w-full h-full object-cover" />
+      </div>
+
+      <div className="flex-1 px-3 py-3 flex flex-col justify-between min-w-0">
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-black text-gray-900 text-sm leading-tight line-clamp-2 flex-1">
+              {loc.name[lang]}
+            </h3>
+            <button
+              onClick={onToggleLike}
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+            >
+              <Heart size={16} className={liked ? 'fill-red-500 text-red-500' : 'text-gray-300'} />
+            </button>
+          </div>
+          <span className={`inline-block ${badge.bg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full mt-1`}>
+            {badge.label[lang]}
+          </span>
+        </div>
+        <div>
+          <p className="text-gray-400 text-xs flex items-center gap-0.5 mb-1">
+            <MapPin size={9} className="text-primary flex-shrink-0" />
+            <span className="truncate">{province}</span>
+          </p>
+          <div className="flex items-center gap-1 text-[11px]">
+            <Star size={10} className="fill-yellow-400 text-yellow-400" />
+            <span className="font-bold text-gray-700">{loc.rating}</span>
+            <span className="text-gray-400">({rev})</span>
+            {dist > 0 && <><span className="text-gray-200 mx-0.5">·</span><span className="text-gray-400">{dist} км</span></>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function MobileExplore() {
   const navigate = useNavigate()
@@ -45,18 +113,49 @@ export default function MobileExplore() {
   const [cat, setCat] = useState('all')
   const [q, setQ] = useState(searchParams.get('q') || '')
   const [liked, setLiked] = useState({})
+  const miniMapRef = useRef(null)
+
+  const { isLoaded: mapLoaded } = useJsApiLoader({ googleMapsApiKey: GMAPS_KEY })
 
   useEffect(() => {
     setQ(searchParams.get('q') || '')
   }, [searchParams])
 
-  const province = loc => (REGION_LABEL[lang] ?? REGION_LABEL.en)[loc.region] ?? loc.region
+  const province = loc => {
+    if (loc.type === 'museum') return loc.province ?? ''
+    return (REGION_LABEL[lang] ?? REGION_LABEL.en)[loc.region] ?? loc.region
+  }
 
-  const filtered = locations.filter(loc => {
-    const matchCat = cat === 'all' || loc.category === cat
-    const matchQ = !q || Object.values(loc.name).some(n => n.toLowerCase().includes(q.toLowerCase()))
+  // Combined list: main destinations + museums (treated as first-class entries)
+  const combined = [...locations, ...museums]
+
+  const filtered = combined.filter(loc => {
+    const matchCat =
+      cat === 'all' ||
+      loc.category === cat ||
+      (cat === 'museum' && loc.type === 'museum')
+    const matchQ =
+      !q ||
+      Object.values(loc.name).some(n => typeof n === 'string' && n.toLowerCase().includes(q.toLowerCase())) ||
+      (loc.province && loc.province.toLowerCase().includes(q.toLowerCase()))
     return matchCat && matchQ
   })
+
+  const fitToMarkers = useCallback((map) => {
+    if (!map || filtered.length === 0) return
+    if (filtered.length === 1) {
+      map.setCenter({ lat: filtered[0].lat, lng: filtered[0].lng })
+      map.setZoom(6)
+      return
+    }
+    const bounds = new window.google.maps.LatLngBounds()
+    filtered.forEach(l => bounds.extend({ lat: l.lat, lng: l.lng }))
+    map.fitBounds(bounds, { top: 16, right: 16, bottom: 16, left: 16 })
+  }, [filtered])
+
+  useEffect(() => {
+    if (mapLoaded && miniMapRef.current) fitToMarkers(miniMapRef.current)
+  }, [mapLoaded, fitToMarkers])
 
   const toggleLike = (e, id) => {
     e.stopPropagation()
@@ -108,32 +207,47 @@ export default function MobileExplore() {
         </div>
 
         {/* ── 미니 맵 ── */}
-        <div className="mx-4 mt-3 rounded-2xl overflow-hidden shadow-sm">
-          <div
-            className="relative cursor-pointer"
-            style={{ height: 130 }}
-            onClick={() => navigate('/map')}
-          >
-            <div className="w-full h-full bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 relative">
-              {MAP_PINS.map((p, i) => (
-                <div key={i} style={{ left: p.x, top: p.y }} className="absolute -translate-x-1/2 -translate-y-1/2">
-                  <div className={`${p.n >= 8 ? 'w-7 h-7 text-[10px]' : 'w-5 h-5 text-[9px]'} ${p.c} rounded-full flex items-center justify-center text-white font-bold shadow-md border-2 border-white`}>
-                    {p.n}
-                  </div>
-                </div>
-              ))}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400/40 font-semibold text-xs">Монгол</div>
-              <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5 bg-white/90 rounded-lg px-2.5 py-1">
-                <MapPin size={11} className="text-primary" />
-                <span className="text-xs font-bold text-gray-600">
-                  {lang === 'mn' ? 'Газрын зураг' : lang === 'kr' ? '지도 보기' : 'View Map'}
-                </span>
-              </div>
-              <button className="absolute top-2.5 right-3 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm">
-                <Navigation size={12} className="text-primary" />
-              </button>
+        <div className="mx-4 mt-3 rounded-2xl overflow-hidden shadow-sm relative" style={{ height: 200 }}>
+          {!mapLoaded ? (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          </div>
+          ) : (
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={{ lat: 46.8625, lng: 103.8467 }}
+              zoom={5}
+              options={MINI_MAP_OPTIONS}
+              onLoad={(map) => { miniMapRef.current = map; fitToMarkers(map) }}
+              onClick={() => navigate('/map')}
+            >
+              {filtered.map(loc => (
+                <Marker
+                  key={loc.id}
+                  position={{ lat: loc.lat, lng: loc.lng }}
+                  icon={miniMarker(CAT_COLORS[loc.category] ?? '#2F855A')}
+                  onClick={() => navigate(`/explore/${loc.id}`)}
+                />
+              ))}
+            </GoogleMap>
+          )}
+
+          {/* Tap-to-fullmap overlay (excludes marker clicks via pointer-events) */}
+          <button
+            onClick={() => navigate('/map')}
+            className="absolute bottom-2.5 left-3 flex items-center gap-1.5 bg-white/95 rounded-lg px-2.5 py-1 shadow-sm z-10 active:scale-95 transition-transform"
+          >
+            <MapPin size={11} className="text-primary" />
+            <span className="text-xs font-bold text-gray-700">
+              {lang === 'mn' ? 'Бүтэн зураг' : lang === 'kr' ? '지도 보기' : 'View Full Map'}
+            </span>
+          </button>
+          <button
+            onClick={() => navigate('/map')}
+            className="absolute top-2.5 right-3 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm z-10 active:scale-95 transition-transform"
+          >
+            <Navigation size={12} className="text-primary" />
+          </button>
         </div>
 
         {/* ── 결과 카운트 ── */}
@@ -158,55 +272,19 @@ export default function MobileExplore() {
                 {lang === 'mn' ? 'Үр дүн олдсонгүй' : lang === 'kr' ? '검색 결과가 없어요' : 'No results found'}
               </p>
             </div>
-          ) : filtered.map(loc => {
-            const badge = CAT_BADGE[loc.category] ?? CAT_BADGE.nature
-            const dist  = MOCK_DIST[loc.id]
-            const rev   = MOCK_REVIEWS[loc.id] ?? 0
-            return (
-              <div
-                key={loc.id}
-                onClick={() => navigate(`/explore/${loc.id}`)}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm flex cursor-pointer active:scale-[0.99] transition-transform"
-              >
-                {/* 썸네일 */}
-                <div className="relative w-24 h-24 flex-shrink-0">
-                  <img src={loc.image} alt={loc.name[lang]} className="w-full h-full object-cover" />
-                </div>
-
-                {/* 정보 */}
-                <div className="flex-1 px-3 py-3 flex flex-col justify-between min-w-0">
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-black text-gray-900 text-sm leading-tight line-clamp-2 flex-1">
-                        {loc.name[lang]}
-                      </h3>
-                      <button
-                        onClick={e => toggleLike(e, loc.id)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                      >
-                        <Heart size={16} className={liked[loc.id] ? 'fill-red-500 text-red-500' : 'text-gray-300'} />
-                      </button>
-                    </div>
-                    <span className={`inline-block ${badge.bg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full mt-1`}>
-                      {badge.label[lang]}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-xs flex items-center gap-0.5 mb-1">
-                      <MapPin size={9} className="text-primary flex-shrink-0" />
-                      <span className="truncate">{province(loc)}</span>
-                    </p>
-                    <div className="flex items-center gap-1 text-[11px]">
-                      <Star size={10} className="fill-yellow-400 text-yellow-400" />
-                      <span className="font-bold text-gray-700">{loc.rating}</span>
-                      <span className="text-gray-400">({rev})</span>
-                      {dist > 0 && <><span className="text-gray-200 mx-0.5">·</span><span className="text-gray-400">{dist} км</span></>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+          ) : filtered.map(loc => (
+            <ListingCard
+              key={loc.id}
+              loc={loc}
+              lang={lang}
+              liked={!!liked[loc.id]}
+              province={province(loc)}
+              dist={MOCK_DIST[loc.id]}
+              rev={MOCK_REVIEWS[loc.id] ?? 0}
+              onClick={() => navigate(`/explore/${loc.id}`)}
+              onToggleLike={(e) => toggleLike(e, loc.id)}
+            />
+          ))}
         </div>
 
       </div>
