@@ -7,7 +7,7 @@
 
 **국민대학교 2026 캡스톤 디자인 | 팀 81**
 
-[📱 데모 보기](https://kookmin-sw.github.io/capstone-2026-81/) · [🐛 이슈 신고](https://github.com/kookmin-sw/capstone-2026-81/issues) · [📖 위키](https://github.com/kookmin-sw/capstone-2026-81/wiki)
+[📱 데모 보기](https://kookmin-sw.github.io/2026-capstone-81/) · [🐛 이슈 신고](https://github.com/kookmin-sw/2026-capstone-81/issues) · [📖 위키](https://github.com/kookmin-sw/2026-capstone-81/wiki)
 
 </div>
 
