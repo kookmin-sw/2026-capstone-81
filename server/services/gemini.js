@@ -9,11 +9,21 @@ export async function sendChatMessage(message, history = []) {
     systemInstruction: config.SYSTEM_PROMPT 
   });
 
+  // Accept both shapes from the frontend:
+  //   { role, content: "..." }                   (legacy / OpenAI-style)
+  //   { role, parts: [{ text: "..." }] }         (Gemini native — what AIChat sends)
+  // If we strip parts and read m.content here, every message after the first
+  // ends up with text:undefined and the SDK rejects the request.
+  const normalisedHistory = history.slice(-config.MAX_HISTORY_MESSAGES).map(m => {
+    const text = m.parts?.[0]?.text ?? m.content ?? ''
+    return {
+      role: m.role === 'assistant' ? 'model' : (m.role === 'model' ? 'model' : 'user'),
+      parts: [{ text }],
+    }
+  }).filter(m => m.parts[0].text)
+
   const chat = model.startChat({
-    history: history.slice(-config.MAX_HISTORY_MESSAGES).map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    })),
+    history: normalisedHistory,
     generationConfig: {
       maxOutputTokens: config.MAX_TOKENS_CHAT,
       temperature: config.TEMPERATURE_CHAT,
