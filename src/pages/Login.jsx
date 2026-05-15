@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
@@ -9,7 +9,7 @@ import { NomadLogoIcon, NomadLogoText } from '../components/NomadLogo'
 export default function Login() {
   const navigate = useNavigate()
   const { tr, lang } = useLang()
-  const { login, signup, loginWithGoogle, resetPassword } = useAuth()
+  const { user, login, signup, loginWithGoogle, resetPassword } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -18,6 +18,12 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [isReset, setIsReset] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // After Google signInWithRedirect, the page reloads with the user authenticated —
+  // bounce them to /home so they don't sit on the login page.
+  useEffect(() => {
+    if (user) navigate('/home', { replace: true })
+  }, [user, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError(''); setSuccessMsg('')
