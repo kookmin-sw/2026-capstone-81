@@ -23,7 +23,10 @@ export default function MobileProfile() {
     {
       icon: Settings,
       label: { kr: '설정', en: 'Settings', mn: 'Тохиргоо' },
-      onClick: () => {},
+      onClick: () => {
+        const el = document.getElementById('settings-section')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      },
     },
   ]
 
@@ -78,7 +81,7 @@ export default function MobileProfile() {
         </div>
 
         {/* 언어 선택 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
+        <div id="settings-section" className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Globe size={16} className="text-primary" />
             <p className="text-sm font-black text-gray-900">
