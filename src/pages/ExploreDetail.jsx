@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Star, Clock, Calendar, Heart, Share2, MapPin, Sparkles, Plus } from 'lucide-react'
-import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, query as fbQuery, orderBy, onSnapshot } from 'firebase/firestore'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
@@ -10,12 +10,42 @@ import { museums } from '../data/museums'
 import { useWikiImage } from '../hooks/useWikiImage'
 import BottomNav from '../components/BottomNav'
 
+// Cheap relative-time formatter for the review row.
+function reviewTimeAgo(date, lang) {
+  if (!date) return ''
+  const d = date instanceof Date ? date : new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
+  const m = Math.floor((Date.now() - d.getTime()) / 60000)
+  if (m < 1) return lang === 'kr' ? '방금' : lang === 'mn' ? 'дөнгөж' : 'just now'
+  if (m < 60) return lang === 'kr' ? `${m}분 전` : lang === 'mn' ? `${m} мин өмнө` : `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return lang === 'kr' ? `${h}시간 전` : lang === 'mn' ? `${h} цагийн өмнө` : `${h}h ago`
+  const day = Math.floor(h / 24)
+  if (day < 30) return lang === 'kr' ? `${day}일 전` : lang === 'mn' ? `${day} өдрийн өмнө` : `${day}d ago`
+  return d.toLocaleDateString(lang === 'kr' ? 'ko' : lang === 'mn' ? 'mn' : 'en')
+}
+
+// Does this Firestore blog post mention any of the destination's names?
+// We do case-insensitive substring matching in title + content against the
+// destination's KR/EN/MN names (and EN fallback for province if present).
+function blogMentionsLocation(blog, loc) {
+  const names = [
+    loc?.name?.kr, loc?.name?.en, loc?.name?.mn,
+    typeof loc?.name === 'string' ? loc.name : null,
+    loc?.province,
+  ].filter(Boolean).map(s => s.toLowerCase())
+  if (names.length === 0) return false
+  const haystack = `${blog.title ?? ''} ${blog.content ?? ''}`.toLowerCase()
+  return names.some(n => n.length >= 2 && haystack.includes(n))
+}
+
 export default function ExploreDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { lang, tr } = useLang()
   const { user } = useAuth()
   const [liked, setLiked] = useState(false)
+  const [allBlogs, setAllBlogs] = useState([])
 
   useEffect(() => {
     if (!user || !db) return
@@ -23,6 +53,21 @@ export default function ExploreDetail() {
       .then(snap => setLiked(snap.exists()))
       .catch(() => {})
   }, [user, id])
+
+  // Subscribe to all Firestore blog posts so we can show ones that mention
+  // THIS destination as "Traveler Reviews". Firestore can't do substring
+  // queries, so we fetch + filter client-side; fine for tens-to-hundreds
+  // of posts which is the realistic capstone scale.
+  useEffect(() => {
+    if (!db) return
+    const q = fbQuery(collection(db, 'blogs'), orderBy('createdAt', 'desc'))
+    const unsub = onSnapshot(
+      q,
+      snap => setAllBlogs(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      () => {}
+    )
+    return () => unsub()
+  }, [])
 
   const toggleLike = async () => {
     if (!user || !db) { setLiked(p => !p); return }
@@ -161,21 +206,83 @@ export default function ExploreDetail() {
               <p className="text-sm text-gray-600 leading-relaxed">{loc.description[lang]}</p>
             </div>
 
-            {/* Traveler Reviews — empty state until real reviews are wired to Firestore */}
-            <div className="bg-white mt-2 px-4 py-4">
-              <h2 className="text-sm font-black text-gray-900 mb-3">
-                {lang === 'kr' ? '다른 여행자 후기' : lang === 'en' ? 'Traveler Reviews' : 'Аялагчдын сэтгэгдэл'}
-              </h2>
-              <div className="text-center py-6 text-gray-400">
-                <div className="text-3xl mb-2">💬</div>
-                <p className="text-xs font-semibold">
-                  {lang === 'kr' ? '아직 작성된 후기가 없어요' : lang === 'en' ? 'No reviews yet' : 'Одоогоор сэтгэгдэл байхгүй'}
-                </p>
-                <p className="text-[10px] mt-1 text-gray-300">
-                  {lang === 'kr' ? '첫 후기를 남겨보세요' : lang === 'en' ? 'Be the first to share your experience' : 'Эхний сэтгэгдлийг үлдээгээрэй'}
-                </p>
-              </div>
-            </div>
+            {/* Traveler Reviews — pulled from Firestore blog posts that mention this destination */}
+            {(() => {
+              const matchedBlogs = allBlogs.filter(b => blogMentionsLocation(b, loc))
+              return (
+                <div className="bg-white mt-2 px-4 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-black text-gray-900">
+                      {lang === 'kr' ? '다른 여행자 후기' : lang === 'en' ? 'Traveler Reviews' : 'Аялагчдын сэтгэгдэл'}
+                    </h2>
+                    {matchedBlogs.length > 0 && (
+                      <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+                        {matchedBlogs.length}{lang === 'kr' ? '개' : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  {matchedBlogs.length === 0 ? (
+                    <div className="text-center py-6 text-gray-400">
+                      <div className="text-3xl mb-2">💬</div>
+                      <p className="text-xs font-semibold">
+                        {lang === 'kr' ? '아직 작성된 후기가 없어요' : lang === 'en' ? 'No reviews yet' : 'Одоогоор сэтгэгдэл байхгүй'}
+                      </p>
+                      <button
+                        onClick={() => navigate('/write')}
+                        className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary text-[11px] font-bold rounded-full active:scale-95 transition-transform"
+                      >
+                        {lang === 'kr' ? '첫 후기 쓰기' : lang === 'en' ? 'Write the first review' : 'Эхний сэтгэгдэл үлдээх'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {matchedBlogs.slice(0, 6).map(b => {
+                        const created = b.createdAt?.toDate?.()
+                        const initial = (b.authorName || b.authorEmail || '?').trim()[0]?.toUpperCase() || '?'
+                        return (
+                          <button
+                            key={b.id}
+                            onClick={() => navigate(`/post/${b.id}`)}
+                            className="w-full text-left bg-gray-50 hover:bg-gray-100 active:scale-[0.99] transition-all rounded-2xl p-3 flex gap-3"
+                          >
+                            <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-black text-primary">{initial}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-xs font-bold text-gray-800 truncate">
+                                  {b.authorName || 'Traveler'}
+                                </span>
+                                <span className="text-[10px] text-gray-400 flex-shrink-0">
+                                  {reviewTimeAgo(created, lang)}
+                                </span>
+                              </div>
+                              {b.title && (
+                                <p className="text-xs font-bold text-gray-900 line-clamp-1">{b.title}</p>
+                              )}
+                              {b.content && (
+                                <p className="text-xs text-gray-500 line-clamp-2 mt-0.5 leading-relaxed">
+                                  {b.content}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
+                      {matchedBlogs.length > 6 && (
+                        <button
+                          onClick={() => navigate('/blog')}
+                          className="w-full text-center text-[11px] text-primary font-semibold py-2"
+                        >
+                          {lang === 'kr' ? `+ ${matchedBlogs.length - 6}개 더 보기` : lang === 'en' ? `+ ${matchedBlogs.length - 6} more` : `+ ${matchedBlogs.length - 6} ширхэг`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </>
         )}
 
