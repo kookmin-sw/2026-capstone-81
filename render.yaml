@@ -1,0 +1,21 @@
+# Render Blueprint — deploys the Nomadiq Express backend (server/).
+# In Render: New + → Blueprint → pick this repo. Render reads this file.
+# After the service is live, set GEMINI_API_KEY in the dashboard
+# (Environment tab) — it is marked sync:false so it is never committed.
+services:
+  - type: web
+    name: nomadiq-backend
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      # Set this manually in the Render dashboard (secret).
+      - key: GEMINI_API_KEY
+        sync: false
+      # Comma-separated list of allowed frontend origins.
+      # Add your Amplify URL here. *.amplifyapp.com is also auto-allowed.
+      - key: ALLOWED_ORIGINS
+        value: https://master.d4oeyk423ncnj.amplifyapp.com

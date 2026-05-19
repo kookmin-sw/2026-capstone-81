@@ -14,6 +14,9 @@ const PORT = process.env.PORT || 3001
 app.use(corsMiddleware)
 app.use(express.json({ limit: config.MAX_BODY_SIZE }))
 
+// Health check — used by Render and for quick "is the backend up?" tests.
+app.get('/health', (req, res) => res.json({ status: 'ok' }))
+
 app.post('/api/chat', validateChat, async (req, res, next) => {
   try {
     const { message, history = [] } = req.body
