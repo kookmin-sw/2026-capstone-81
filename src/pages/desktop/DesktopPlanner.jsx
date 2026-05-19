@@ -141,12 +141,13 @@ export default function DesktopPlanner() {
         { budget, pace, groupType, accommodation },
       )
       setResult(plan)
-    } catch {
-      setGenError(
+    } catch (err) {
+      console.error('[Planner] generate failed', err)
+      const base =
         lang === 'mn' ? 'Хуваарь гаргах амжилтгүй боллоо. Дахин оролдоно уу.' :
         lang === 'en' ? 'Failed to generate. Please try again.' :
         '일정 생성에 실패했습니다. 다시 시도해주세요.'
-      )
+      setGenError(err?.message ? `${base}\n(${err.message})` : base)
     } finally {
       setLoading(false)
     }
@@ -300,7 +301,7 @@ export default function DesktopPlanner() {
                 <div className="text-6xl mb-4">🗺️</div>
                 <p className="text-gray-500 text-base mb-2">{tr('planner_placeholder_line1')}</p>
                 <p className="text-gray-400 text-sm">{tr('planner_placeholder_line2')}</p>
-                {genError && <p className="text-red-400 text-sm mt-4">{genError}</p>}
+                {genError && <p className="text-red-400 text-sm mt-4 whitespace-pre-line">{genError}</p>}
               </div>
             )}
 
