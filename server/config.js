@@ -5,7 +5,7 @@ dotenv.config()
 export default {
   MODEL_ID: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
   AWS_REGION: process.env.AWS_REGION || 'us-east-1',
-  MAX_TOKENS_CHAT: 2048,
+  MAX_TOKENS_CHAT: 4096,
   MAX_TOKENS_PLAN: 8192,
   TEMPERATURE_CHAT: 0.7,
   TEMPERATURE_PLAN: 0.7,

@@ -27,11 +27,18 @@ export async function sendChatMessage(message, history = []) {
     generationConfig: {
       maxOutputTokens: config.MAX_TOKENS_CHAT,
       temperature: config.TEMPERATURE_CHAT,
+      // Gemini 2.5 Flash burns output tokens on a hidden "thinking" pass
+      // before replying. With the small chat budget that can leave nothing
+      // for the actual answer (finishReason MAX_TOKENS, empty text) — which
+      // makes .text() throw. Disable thinking so every token is the reply.
+      thinkingConfig: { thinkingBudget: 0 },
     },
   });
 
   const result = await chat.sendMessage(message);
-  return result.response.text();
+  const reply = result.response.text();
+  if (!reply || !reply.trim()) throw new Error('Empty response from model')
+  return reply;
 }
 
 export async function generateTravelPlan(days, interests, language, opts = {}) {
