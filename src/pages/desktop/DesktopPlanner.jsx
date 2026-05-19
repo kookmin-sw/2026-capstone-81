@@ -4,7 +4,7 @@ import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
 import { generatePlanWithAI } from '../../utils/api'
 import { saveTrip, defaultTripTitle } from '../../utils/trips'
-import { Sparkles, Clock, Heart, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon, BookmarkPlus, Check, Loader } from 'lucide-react'
+import { Sparkles, Clock, Heart, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon, BookmarkPlus, Check, Loader, Wallet, Gauge, Users, Bed, Calendar } from 'lucide-react'
 
 function timeIcon(time) {
   const h = parseInt(time?.split(':')[0] ?? '9', 10)
@@ -27,6 +27,57 @@ const interestEmojis = {
 }
 const langLabels = { kr: '한국어', en: 'English', mn: 'Mongolian' }
 
+const BUDGETS = [
+  { key: 'budget',  label: { kr: '저예산',   en: 'Budget',  mn: 'Хямд'        }, emoji: '💵' },
+  { key: 'mid',     label: { kr: '중간',     en: 'Mid',     mn: 'Дунд'        }, emoji: '💳' },
+  { key: 'premium', label: { kr: '프리미엄', en: 'Premium', mn: 'Зэрэглэлтэй' }, emoji: '💎' },
+]
+const PACES = [
+  { key: 'relaxed', label: { kr: '느긋', en: 'Relaxed', mn: 'Тайван' }, emoji: '🐢' },
+  { key: 'normal',  label: { kr: '보통', en: 'Normal',  mn: 'Дундаж' }, emoji: '🚶' },
+  { key: 'packed',  label: { kr: '빡빡', en: 'Packed',  mn: 'Эрчтэй' }, emoji: '🏃' },
+]
+const GROUPS = [
+  { key: 'solo',    label: { kr: '혼자', en: 'Solo',    mn: 'Ганцаараа' }, emoji: '🧍' },
+  { key: 'couple',  label: { kr: '커플', en: 'Couple',  mn: 'Хосоор'    }, emoji: '💑' },
+  { key: 'family',  label: { kr: '가족', en: 'Family',  mn: 'Гэр бүл'   }, emoji: '👨‍👩‍👧' },
+  { key: 'friends', label: { kr: '친구', en: 'Friends', mn: 'Найзууд'   }, emoji: '👯' },
+]
+const STAYS = [
+  { key: 'hotel',      label: { kr: '호텔',         en: 'Hotel',      mn: 'Зочид буудал' }, emoji: '🏨' },
+  { key: 'guesthouse', label: { kr: '게스트하우스', en: 'Guesthouse', mn: 'Гэстэйз'      }, emoji: '🏠' },
+  { key: 'ger',        label: { kr: '게르',         en: 'Ger Camp',   mn: 'Гэр бааз'     }, emoji: '⛺' },
+  { key: 'mixed',      label: { kr: '혼합',         en: 'Mixed',      mn: 'Холимог'      }, emoji: '🎒' },
+]
+
+// Single-select option grid used for budget / pace / group / accommodation.
+function OptionGrid({ icon: Icon, title, options, value, onChange, lang, cols = 3 }) {
+  return (
+    <div>
+      <label className="font-semibold text-gray-700 flex items-center gap-2 mb-3">
+        <Icon size={16} className="text-primary" />
+        {title}
+      </label>
+      <div className={`grid gap-2 ${cols === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        {options.map(o => (
+          <button
+            key={o.key}
+            onClick={() => onChange(o.key)}
+            className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${
+              value === o.key
+                ? 'bg-primary/5 border-primary text-primary'
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <span className="text-xl">{o.emoji}</span>
+            <span className="text-xs font-semibold">{o.label[lang] ?? o.label.en}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function DesktopPlanner() {
   const { tr, lang } = useLang()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -36,6 +87,12 @@ export default function DesktopPlanner() {
 
   const [days, setDays] = useState(5)
   const [interests, setInterests] = useState(['int_nature'])
+  const [budget, setBudget] = useState('mid')
+  const [pace, setPace] = useState('normal')
+  const [groupType, setGroupType] = useState('couple')
+  const [accommodation, setAccommodation] = useState('mixed')
+  const [startDate, setStartDate] = useState('')
+  const [departureCity, setDepartureCity] = useState('Ulaanbaatar')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [genError, setGenError] = useState('')
@@ -76,7 +133,13 @@ export default function DesktopPlanner() {
     setSavedTripId(null)
     try {
       const interestLabels = interests.map(k => tr(k))
-      const plan = await generatePlanWithAI(days, interestLabels, langLabels[lang] || 'Korean', focusLocations.length ? focusLocations : null)
+      const plan = await generatePlanWithAI(
+        days, interestLabels, langLabels[lang] || 'Korean',
+        focusLocations.length ? focusLocations : null,
+        startDate || null,
+        departureCity.trim() || null,
+        { budget, pace, groupType, accommodation },
+      )
       setResult(plan)
     } catch {
       setGenError(
@@ -166,6 +229,55 @@ export default function DesktopPlanner() {
                     {tr(key)}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Budget */}
+            <OptionGrid
+              icon={Wallet} lang={lang} options={BUDGETS} value={budget} onChange={setBudget}
+              title={lang === 'kr' ? '예산 수준' : lang === 'en' ? 'Budget Level' : 'Төсөв'}
+            />
+
+            {/* Pace */}
+            <OptionGrid
+              icon={Gauge} lang={lang} options={PACES} value={pace} onChange={setPace}
+              title={lang === 'kr' ? '여행 페이스' : lang === 'en' ? 'Pace' : 'Хурд'}
+            />
+
+            {/* Group */}
+            <OptionGrid
+              icon={Users} lang={lang} options={GROUPS} value={groupType} onChange={setGroupType} cols={4}
+              title={lang === 'kr' ? '동행' : lang === 'en' ? 'Group' : 'Хэн нартай'}
+            />
+
+            {/* Accommodation */}
+            <OptionGrid
+              icon={Bed} lang={lang} options={STAYS} value={accommodation} onChange={setAccommodation} cols={4}
+              title={lang === 'kr' ? '숙소 선호' : lang === 'en' ? 'Stay Type' : 'Байр'}
+            />
+
+            {/* Date + Departure */}
+            <div className="space-y-3">
+              <div>
+                <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                  <Calendar size={16} className="text-primary" />
+                  {lang === 'kr' ? '시작 날짜 (선택)' : lang === 'en' ? 'Start Date (optional)' : 'Эхлэх огноо'}
+                </label>
+                <input
+                  type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                  <MapPin size={16} className="text-primary" />
+                  {lang === 'kr' ? '출발 도시' : lang === 'en' ? 'Departure City' : 'Гарах хот'}
+                </label>
+                <input
+                  type="text" value={departureCity} onChange={e => setDepartureCity(e.target.value)}
+                  placeholder="Ulaanbaatar"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-primary"
+                />
               </div>
             </div>
 

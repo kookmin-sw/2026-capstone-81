@@ -58,16 +58,6 @@ export async function generateTravelPlan(days, interests, language, opts = {}) {
     hint('Group', groupType) +
     hint('Accommodation preference', accommodation)
 
-  let specificRoadConditions = ''
-  if (locations && locations.length > 0) {
-    try {
-      const roadData = await getMongolianRoadConditions(locations)
-      if (roadData) specificRoadConditions = `\n<specific_road_conditions>\n${roadData}\n</specific_road_conditions>`
-    } catch {
-      // road data is optional; ignore lookup failures
-    }
-  }
-
   const prompt = `You are a professional Mongolian tour operator. Create a realistic, highly detailed ${days}-day Mongolia itinerary tuned to the traveller's profile below.
 
 <traveller_profile>${profileBlock}
@@ -80,7 +70,7 @@ export async function generateTravelPlan(days, interests, language, opts = {}) {
 - BUDGET: scale restaurant, accommodation, and activity choices to the budget level. budget=cheap street food + ger/guesthouse, mid=local restaurants + 3-star, premium=top restaurants + 4-5 star hotels.
 - PACE: relaxed=fewer stops + longer rests, normal=balanced, packed=more activities + earlier start.
 - GROUP: family=more breaks + kid-friendly; couple=romantic spots; friends=group-friendly food; solo=safety + meeting people.
-- SEASONALITY: if winter (Oct-Apr), prefer accessible winter activities; if summer, include outdoor festivals/Naadam if relevant to the date.${specificRoadConditions}
+- SEASONALITY: if winter (Oct-Apr), prefer accessible winter activities; if summer, include outdoor festivals/Naadam if relevant to the date.
 </logistics_rules>
 
 <response_instructions>
@@ -179,42 +169,5 @@ Include practical survival tips and at least one hidden gem per day. Be specific
     tips: Array.isArray(parsed?.tips) ? parsed.tips : [],
   }
 
-  // --- 사진 데이터 매칭 로직 ---
-  const enrichedItinerary = await Promise.all(plan.itinerary.map(async (day) => {
-    const enrichedActivities = await Promise.all((day.activities ?? []).map(async (activity) => {
-      if (activity.location_name) {
-        const photoUrl = await fetchGooglePlacePhoto(activity.location_name);
-        return { ...activity, photo_url: photoUrl };
-      }
-      return activity;
-    }));
-    return { ...day, activities: enrichedActivities };
-  }));
-
-  return { ...plan, itinerary: enrichedItinerary };
-}
-
-/**
- * Google Places API를 통해 장소 사진 URL을 가져오는 함수 (개념적 구현)
- */
-async function fetchGooglePlacePhoto(query) {
-  try {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    if (!apiKey) return null;
-
-    // 1. 장소 검색 (Place Search)
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query + ' Mongolia')}&inputtype=textquery&fields=photos,place_id&key=${apiKey}`;
-    const searchRes = await fetch(searchUrl);
-    const searchData = await searchRes.json();
-
-    const photoReference = searchData.candidates?.[0]?.photos?.[0]?.photo_reference;
-    if (!photoReference) return null;
-
-    // 2. 사진 URL 생성 (실제 이미지를 다운로드하는 것이 아니라 URL을 반환)
-    // maxWidth를 지정하여 적절한 크기의 이미지를 가져옵니다.
-    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoReference}&key=${apiKey}`;
-  } catch (error) {
-    console.error(`Photo fetch error for ${query}:`, error);
-    return null;
-  }
+  return plan
 }
