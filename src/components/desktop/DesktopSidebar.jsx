@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
-import { Home, Map, BookOpen, Heart, CalendarDays, Briefcase, User, Settings } from 'lucide-react'
+import { Home, Map, BookOpen, Heart, CalendarDays, Briefcase, User } from 'lucide-react'
 import { NomadLogoIcon, NomadLogoText } from '../NomadLogo'
 
 const navItems = [
@@ -12,7 +12,6 @@ const navItems = [
   { icon: Briefcase,    path: '/saved',   label: { kr: '내 여행',   en: 'My Trips',   mn: 'Миний аяллууд'} },
   { icon: BookOpen,     path: '/blog',    label: { kr: '블로그',    en: 'Blog',       mn: 'Тэмдэглэл'    } },
   { icon: User,         path: '/profile', label: { kr: '프로필',    en: 'Profile',    mn: 'Профайл'      } },
-  { icon: Settings,     path: '/home',    label: { kr: '설정',      en: 'Settings',   mn: 'Тохиргоо'     } },
 ]
 
 export default function DesktopSidebar() {
