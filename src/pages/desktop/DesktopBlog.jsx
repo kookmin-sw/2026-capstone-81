@@ -4,8 +4,8 @@ import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
 import { blogs } from '../../data/blogs'
 import { db } from '../../firebase'
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
-import { Search, Heart, Clock, Plus, User as UserIcon, BookOpen } from 'lucide-react'
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
+import { Search, Heart, Clock, Plus, User as UserIcon, BookOpen, Pencil, Trash2 } from 'lucide-react'
 
 export default function DesktopBlog() {
   const navigate = useNavigate()
@@ -197,7 +197,7 @@ export default function DesktopBlog() {
               {(tab === 'all' && catFilter === 'all' ? filtered.slice(1) : filtered).map(post =>
                 post._type === 'static'
                   ? <StaticCard key={post.id} blog={post} lang={lang} navigate={navigate} label={l.read} />
-                  : <UserCard key={post.id} post={post} navigate={navigate} label={l.read} />
+                  : <UserCard key={post.id} post={post} navigate={navigate} label={l.read} lang={lang} user={user} />
               )}
             </div>
           </>
@@ -250,7 +250,22 @@ function StaticCard({ blog, lang, navigate, label }) {
   )
 }
 
-function UserCard({ post, navigate, label }) {
+function UserCard({ post, navigate, label, lang, user }) {
+  const isAuthor = !!user && post.authorId === user.uid
+
+  const handleDelete = async (e) => {
+    e.stopPropagation()
+    if (!db || !post.id) return
+    const ok = window.confirm(lang === 'kr' ? '이 글을 삭제할까요?' : lang === 'mn' ? 'Энэ нийтлэлийг устгах уу?' : 'Delete this post?')
+    if (!ok) return
+    try {
+      await deleteDoc(doc(db, 'blogs', post.id))
+    } catch (err) {
+      console.error('[Blog] delete failed', err)
+      alert(lang === 'kr' ? '삭제 실패' : 'Delete failed')
+    }
+  }
+
   return (
     <article
       onClick={() => navigate(`/post/${post.id}`)}
@@ -266,10 +281,29 @@ function UserCard({ post, navigate, label }) {
         <span className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
           {post.category}
         </span>
-        <span className="absolute top-3 right-3 flex items-center gap-1 text-white text-[10px] bg-black/35 backdrop-blur-sm px-2 py-1 rounded-full">
-          <UserIcon size={9} />
-          {post.authorName}
-        </span>
+        {isAuthor ? (
+          <div className="absolute top-3 right-3 flex gap-1.5">
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/write?edit=${post.id}`) }}
+              aria-label="Edit"
+              className="w-7 h-7 rounded-full bg-black/40 hover:bg-primary flex items-center justify-center text-white transition-colors"
+            >
+              <Pencil size={12} />
+            </button>
+            <button
+              onClick={handleDelete}
+              aria-label="Delete"
+              className="w-7 h-7 rounded-full bg-black/40 hover:bg-red-500 flex items-center justify-center text-white transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        ) : (
+          <span className="absolute top-3 right-3 flex items-center gap-1 text-white text-[10px] bg-black/35 backdrop-blur-sm px-2 py-1 rounded-full">
+            <UserIcon size={9} />
+            {post.authorName}
+          </span>
+        )}
       </div>
       <div className="p-4">
         <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-1.5">{post.title}</h3>

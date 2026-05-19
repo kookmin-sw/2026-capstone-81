@@ -1,10 +1,9 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
-import { db, storage } from '../firebase'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db } from '../firebase'
+import { collection, addDoc, updateDoc, getDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { ArrowLeft, ImagePlus, Send, X } from 'lucide-react'
 
 const CATS = {
@@ -15,29 +14,39 @@ const CATS = {
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1547448161-c56e75b54317?auto=format&fit=crop&w=600&q=80'
 
-// Resize + JPEG-recompress a file in the browser so the upload stays small
-// (Firestore docs cap at 1 MB, Storage charges by size). Returns a Blob.
-function compressImage(file) {
-  return new Promise((resolve) => {
+// Resize + JPEG-recompress the image entirely in the browser and return it as
+// a base64 data URL. We store it directly inside the Firestore blog document
+// (no Firebase Storage) — this removes the whole upload failure surface
+// (Storage rules / billing / CORS). Compression steps down until the data URL
+// fits comfortably inside Firestore's 1 MB document cap.
+function compressToDataURL(file) {
+  return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
     img.onload = () => {
       URL.revokeObjectURL(url)
-      const MAX = 1200
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(blob => resolve(blob ?? file), 'image/jpeg', 0.85)
+      const steps = [[1200, 0.82], [1000, 0.74], [800, 0.66], [600, 0.6]]
+      let out = ''
+      for (const [maxPx, quality] of steps) {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        out = canvas.toDataURL('image/jpeg', quality)
+        if (out.length < 720 * 1024) break
+      }
+      resolve(out)
     }
-    img.onerror = () => resolve(file)
+    img.onerror = () => reject(new Error('Could not read image'))
     img.src = url
   })
 }
 
 export default function WriteBlog() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
   const { lang } = useLang()
   const { user } = useAuth()
   const fileRef = useRef(null)
@@ -46,24 +55,61 @@ export default function WriteBlog() {
   const [catIdx, setCatIdx] = useState(0)
   const [imageFile, setImageFile] = useState(null)
   const [preview, setPreview] = useState('')
+  const [existingImage, setExistingImage] = useState('') // image kept when editing
   const [loading, setLoading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState('')
   const [error, setError] = useState('')
+  const [loadingPost, setLoadingPost] = useState(!!editId)
 
   const cats = CATS[lang] || CATS.en
+  const isEdit = !!editId
+
+  // Edit mode — load the existing post and prefill the form.
+  useEffect(() => {
+    if (!editId || !db) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const snap = await getDoc(doc(db, 'blogs', editId))
+        if (cancelled) return
+        if (!snap.exists()) { setError('Post not found'); setLoadingPost(false); return }
+        const p = snap.data()
+        setTitle(p.title || '')
+        setContent(p.content || '')
+        setExistingImage(p.imageUrl || '')
+        setPreview(p.imageUrl || '')
+        // Map the stored category string back to an index across all langs.
+        const idx = Object.values(CATS).map(arr => arr.indexOf(p.category)).find(i => i >= 0)
+        if (idx >= 0) setCatIdx(idx)
+      } catch (err) {
+        if (!cancelled) setError(err.message)
+      } finally {
+        if (!cancelled) setLoadingPost(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [editId])
+
   const t = {
-    kr: { titlePh: '제목', contentPh: '여행 이야기를 작성하세요...', photo: '사진 추가', submit: '게시하기', pub: '게시 중...', uploading: '사진 업로드 중...', saving: '저장 중...' },
-    en: { titlePh: 'Title', contentPh: 'Write your travel story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...', uploading: 'Uploading photo...', saving: 'Saving...' },
-    mn: { titlePh: 'Гарчиг', contentPh: 'Аяллын түүхээ бичнэ үү...', photo: 'Зураг нэмэх', submit: 'Нийтлэх', pub: 'Нийтэлж байна...', uploading: 'Зураг байршуулж байна...', saving: 'Хадгалж байна...' },
-  }[lang] || { titlePh: 'Title', contentPh: 'Write your story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...', uploading: 'Uploading...', saving: 'Saving...' }
+    kr: { titlePh: '제목', contentPh: '여행 이야기를 작성하세요...', photo: '사진 추가', submit: isEdit ? '수정하기' : '게시하기', pub: isEdit ? '수정 중...' : '게시 중...', processing: '사진 처리 중...', saving: '저장 중...' },
+    en: { titlePh: 'Title', contentPh: 'Write your travel story...', photo: 'Add photo', submit: isEdit ? 'Update' : 'Publish', pub: isEdit ? 'Updating...' : 'Publishing...', processing: 'Processing photo...', saving: 'Saving...' },
+    mn: { titlePh: 'Гарчиг', contentPh: 'Аяллын түүхээ бичнэ үү...', photo: 'Зураг нэмэх', submit: isEdit ? 'Засах' : 'Нийтлэх', pub: isEdit ? 'Засаж байна...' : 'Нийтэлж байна...', processing: 'Зураг боловсруулж байна...', saving: 'Хадгалж байна...' },
+  }[lang] || { titlePh: 'Title', contentPh: 'Write your story...', photo: 'Add photo', submit: 'Publish', pub: 'Publishing...', processing: 'Processing...', saving: 'Saving...' }
 
   const handleImage = (e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > 20 * 1024 * 1024) { setError('Max 20MB'); return }
+    if (f.size > 25 * 1024 * 1024) { setError('Max 25MB'); return }
     setImageFile(f)
     setPreview(URL.createObjectURL(f))
     setError('')
+  }
+
+  const removeImage = () => {
+    setImageFile(null)
+    setPreview('')
+    setExistingImage('')
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   const handleSubmit = async (e) => {
@@ -75,44 +121,63 @@ export default function WriteBlog() {
     if (!db) { setError('DB not connected'); return }
     try {
       setLoading(true)
-      let imageUrl = DEFAULT_IMG
-      if (imageFile && storage) {
+
+      // Decide the image to save: a freshly picked file → compress; otherwise
+      // keep whatever was already there (editing), else the default image.
+      let imageUrl = existingImage || DEFAULT_IMG
+      if (imageFile) {
         try {
-          setUploadStatus(t.uploading)
-          const compressed = await compressImage(imageFile)
-          const safeName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.[^.]+$/, '.jpg')
-          const sRef = ref(storage, `blog-images/${Date.now()}_${safeName}`)
-          await uploadBytes(sRef, compressed)
-          imageUrl = await getDownloadURL(sRef)
-        } catch (uploadErr) {
-          console.error('[WriteBlog] upload failed:', uploadErr)
-          // Surface the real reason so the user knows whether to enable Storage / Blaze.
+          setUploadStatus(t.processing)
+          imageUrl = await compressToDataURL(imageFile)
+        } catch (imgErr) {
+          console.error('[WriteBlog] image processing failed:', imgErr)
           setError(lang === 'kr'
-            ? `사진 업로드 실패: ${uploadErr.code || uploadErr.message}. 기본 이미지로 저장합니다.`
-            : `Photo upload failed: ${uploadErr.code || uploadErr.message}. Saving with default image.`)
+            ? `사진 처리 실패: ${imgErr.message}. 기본 이미지로 저장합니다.`
+            : `Photo failed: ${imgErr.message}. Saving with default image.`)
+          imageUrl = existingImage || DEFAULT_IMG
         }
       }
+
       setUploadStatus(t.saving)
-      await addDoc(collection(db, 'blogs'), {
-        title: title.trim(),
-        content: content.trim(),
-        category: cats[catIdx],
-        imageUrl,
-        authorName: user?.displayName || 'Traveler',
-        authorEmail: user?.email ?? null,
-        authorId: user?.uid ?? null,
-        lang,
-        createdAt: serverTimestamp(),
-        likes: 0,
-      })
-      navigate('/blog')
+      if (isEdit) {
+        await updateDoc(doc(db, 'blogs', editId), {
+          title: title.trim(),
+          content: content.trim(),
+          category: cats[catIdx],
+          imageUrl,
+          updatedAt: serverTimestamp(),
+        })
+        navigate(`/post/${editId}`)
+      } else {
+        await addDoc(collection(db, 'blogs'), {
+          title: title.trim(),
+          content: content.trim(),
+          category: cats[catIdx],
+          imageUrl,
+          authorName: user?.displayName || 'Traveler',
+          authorEmail: user?.email ?? null,
+          authorId: user?.uid ?? null,
+          lang,
+          createdAt: serverTimestamp(),
+          likes: 0,
+        })
+        navigate('/blog')
+      }
     } catch (err) {
       console.error(err)
-      setError(lang === 'kr' ? '게시 실패' : 'Failed to publish')
+      setError((lang === 'kr' ? '저장 실패: ' : 'Failed to save: ') + (err.message || err.code))
     } finally {
       setLoading(false)
       setUploadStatus('')
     }
+  }
+
+  if (loadingPost) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
   return (
@@ -134,7 +199,7 @@ export default function WriteBlog() {
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 pt-20 pb-16">
         {error && (
-          <div className="mb-4 text-red-500 text-sm text-center bg-red-50 rounded-xl px-4 py-2">{error}</div>
+          <div className="mb-4 text-red-500 text-sm text-center bg-red-50 rounded-xl px-4 py-2 whitespace-pre-line">{error}</div>
         )}
 
         {/* Categories */}
@@ -159,7 +224,7 @@ export default function WriteBlog() {
             <img src={preview} alt="" className="w-full h-52 object-cover" />
             <button
               type="button"
-              onClick={() => { setImageFile(null); setPreview(''); if (fileRef.current) fileRef.current.value = '' }}
+              onClick={removeImage}
               className="absolute top-2 right-2 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
             >
               <X size={14} className="text-white" />

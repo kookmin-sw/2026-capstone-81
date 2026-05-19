@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { blogs } from '../../data/blogs'
 import { db } from '../../firebase'
 import { collection, query as fbQuery, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
-import { Heart, MessageCircle, Bookmark, Clock, PenSquare, Trash2 } from 'lucide-react'
+import { Heart, MessageCircle, Bookmark, Clock, PenSquare, Trash2, Pencil } from 'lucide-react'
 import MobileLayout from './MobileLayout'
 
 const TABS = [
@@ -106,7 +106,8 @@ export default function MobileBlog() {
             const isUser = post.isUser
             const title = isUser ? post.title : (post.title?.[lang] ?? post.title?.kr ?? '')
             const excerpt = isUser ? post.content?.slice(0, 80) : (post.excerpt?.[lang] ?? '')
-            const image = post.image ?? ''
+            // User posts store the photo as `imageUrl`; seed posts use `image`.
+            const image = isUser ? (post.imageUrl ?? '') : (post.image ?? '')
             const author = post.author ?? post.authorName ?? ''
             const createdDate = isUser ? post.createdAt?.toDate?.() : null
             const date = isUser
@@ -169,13 +170,22 @@ export default function MobileBlog() {
                   </div>
                 </div>
                 {canDelete && (
-                  <button
-                    onClick={handleDelete}
-                    aria-label="Delete"
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-gray-50 hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/write?edit=${post.id}`) }}
+                      aria-label="Edit"
+                      className="w-7 h-7 rounded-full bg-gray-50 hover:bg-primary/10 flex items-center justify-center text-gray-400 hover:text-primary transition-colors"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      aria-label="Delete"
+                      className="w-7 h-7 rounded-full bg-gray-50 hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 )}
               </div>
             )

@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
-import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
-import { ArrowLeft, Heart, MessageCircle, Send, User } from 'lucide-react'
+import { doc, getDoc, deleteDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { ArrowLeft, Heart, MessageCircle, Send, User, Pencil, Trash2 } from 'lucide-react'
 
 export default function UserBlogDetail() {
   const { id } = useParams()
@@ -35,6 +35,21 @@ export default function UserBlogDetail() {
     })
     return () => unsub()
   }, [id])
+
+  const isAuthor = !!user && !!post && post.authorId === user.uid
+
+  const handleDelete = async () => {
+    if (!db || !post) return
+    const ok = window.confirm(lang === 'kr' ? '이 글을 삭제할까요?' : lang === 'mn' ? 'Энэ нийтлэлийг устгах уу?' : 'Delete this post?')
+    if (!ok) return
+    try {
+      await deleteDoc(doc(db, 'blogs', post.id))
+      navigate('/blog')
+    } catch (err) {
+      console.error('[UserBlogDetail] delete failed', err)
+      alert(lang === 'kr' ? '삭제 실패' : 'Delete failed')
+    }
+  }
 
   const handleComment = async (e) => {
     e.preventDefault()
@@ -78,6 +93,22 @@ export default function UserBlogDetail() {
           className="absolute top-6 left-6 bg-white/20 backdrop-blur-sm rounded-full p-2.5 hover:bg-white/30 transition-colors">
           <ArrowLeft size={20} className="text-white" />
         </button>
+
+        {/* Author-only actions */}
+        {isAuthor && (
+          <div className="absolute top-6 right-6 flex gap-2">
+            <button onClick={() => navigate(`/write?edit=${post.id}`)}
+              className="bg-white/20 backdrop-blur-sm rounded-full p-2.5 hover:bg-white/30 transition-colors"
+              aria-label="Edit">
+              <Pencil size={18} className="text-white" />
+            </button>
+            <button onClick={handleDelete}
+              className="bg-white/20 backdrop-blur-sm rounded-full p-2.5 hover:bg-red-500/70 transition-colors"
+              aria-label="Delete">
+              <Trash2 size={18} className="text-white" />
+            </button>
+          </div>
+        )}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
           <span className="inline-block bg-gradient-to-r from-purple-500 to-green-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
             {post.category}
