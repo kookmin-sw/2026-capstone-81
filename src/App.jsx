@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { LangProvider } from './context/LangContext'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
-import WelcomeScreen, { hasWelcomed } from './components/WelcomeScreen'
+import WelcomeScreen from './components/WelcomeScreen'
 import Login from './pages/Login'
 import UserBlogDetail from './pages/UserBlogDetail'
 import WriteBlog from './pages/WriteBlog'
@@ -131,10 +131,11 @@ function MobileApp() {
 
 export default function App() {
   const mobile = useIsMobile()
-  // First-visit welcome overlay. Skipped on /preview's outer page so it never
-  // covers the phone-frame demo (the iframe inside still shows it normally).
+  // Welcome overlay — shown on every site entry. Skipped on /preview's outer
+  // page so it never covers the phone-frame demo (the iframe inside still
+  // shows it normally).
   const onPreview = typeof window !== 'undefined' && window.location.pathname.startsWith('/preview')
-  const [showWelcome, setShowWelcome] = useState(() => !onPreview && !hasWelcomed())
+  const [showWelcome, setShowWelcome] = useState(() => !onPreview)
   return (
     <LangProvider>
       <AuthProvider>

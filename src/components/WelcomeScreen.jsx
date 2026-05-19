@@ -3,19 +3,11 @@ import { useLang } from '../context/LangContext'
 import { NomadLogoIcon } from './NomadLogo'
 import { Sparkles, MapPin, Compass, ArrowRight } from 'lucide-react'
 
-// First-visit welcome overlay. Shown once per browser (localStorage flag),
-// dismissed by the "Get Started" button. Lets the visitor pick a language
-// up front since the whole app is multilingual.
+// Welcome overlay shown on every site entry, dismissed by the "Get Started"
+// button. Lets the visitor pick a language up front since the whole app is
+// multilingual.
 
-const STORAGE_KEY = 'nomadiq.welcomed'
 const HERO = '/images/khuvsgul-lake-luxury.jpg'
-
-export function hasWelcomed() {
-  try { return window.localStorage?.getItem(STORAGE_KEY) === '1' } catch { return false }
-}
-export function markWelcomed() {
-  try { window.localStorage?.setItem(STORAGE_KEY, '1') } catch {}
-}
 
 const COPY = {
   kr: {
@@ -69,7 +61,6 @@ export default function WelcomeScreen({ onClose }) {
   }, [])
 
   const start = () => {
-    markWelcomed()
     setClosing(true)
     setTimeout(() => onClose?.(), 380)
   }
