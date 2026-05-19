@@ -3,12 +3,35 @@ import config from '../config.js'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY);
 
-export async function sendChatMessage(message, history = []) {
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash",
-    systemInstruction: config.SYSTEM_PROMPT 
-  });
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
+function isRetryableModelError(err) {
+  const msg = err?.message || ''
+  return err?.status === 429 ||
+    err?.status === 500 ||
+    err?.status === 502 ||
+    err?.status === 503 ||
+    /429|500|502|503|quota|rate limit|service unavailable|high demand|temporar/i.test(msg)
+}
+
+async function withModelFallback(modelIds, createRequest, attemptsPerModel = config.RETRY_ATTEMPTS) {
+  let lastError
+  for (const modelId of modelIds) {
+    for (let attempt = 1; attempt <= attemptsPerModel; attempt += 1) {
+      try {
+        return await createRequest(modelId)
+      } catch (err) {
+        lastError = err
+        if (!isRetryableModelError(err)) throw err
+        console.warn(`[Gemini] ${modelId} attempt ${attempt} failed: ${err.message}`)
+        if (attempt < attemptsPerModel) await sleep(config.RETRY_DELAY_MS * attempt)
+      }
+    }
+  }
+  throw lastError
+}
+
+export async function sendChatMessage(message, history = []) {
   // Accept both shapes from the frontend:
   //   { role, content: "..." }                   (legacy / OpenAI-style)
   //   { role, parts: [{ text: "..." }] }         (Gemini native — what AIChat sends)
@@ -22,20 +45,28 @@ export async function sendChatMessage(message, history = []) {
     }
   }).filter(m => m.parts[0].text)
 
-  const chat = model.startChat({
-    history: normalisedHistory,
-    generationConfig: {
-      maxOutputTokens: config.MAX_TOKENS_CHAT,
-      temperature: config.TEMPERATURE_CHAT,
-      // Gemini 2.5 Flash burns output tokens on a hidden "thinking" pass
-      // before replying. With the small chat budget that can leave nothing
-      // for the actual answer (finishReason MAX_TOKENS, empty text) — which
-      // makes .text() throw. Disable thinking so every token is the reply.
-      thinkingConfig: { thinkingBudget: 0 },
-    },
-  });
+  // Try each model in turn — if gemini-2.5-flash is overloaded (503), fall
+  // through to flash-latest / flash-lite so the chatbot keeps working.
+  const result = await withModelFallback(config.GEMINI_CHAT_MODELS, async (modelId) => {
+    const model = genAI.getGenerativeModel({
+      model: modelId,
+      systemInstruction: config.SYSTEM_PROMPT,
+    })
+    const chat = model.startChat({
+      history: normalisedHistory,
+      generationConfig: {
+        maxOutputTokens: config.MAX_TOKENS_CHAT,
+        temperature: config.TEMPERATURE_CHAT,
+        // Gemini 2.5 Flash burns output tokens on a hidden "thinking" pass
+        // before replying. With the small chat budget that can leave nothing
+        // for the actual answer (finishReason MAX_TOKENS, empty text) — which
+        // makes .text() throw. Disable thinking so every token is the reply.
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    })
+    return chat.sendMessage(message)
+  })
 
-  const result = await chat.sendMessage(message);
   const reply = result.response.text();
   if (!reply || !reply.trim()) throw new Error('Empty response from model')
   return reply;
@@ -126,23 +157,24 @@ Respond entirely in ${language}. Return ONLY a valid JSON OBJECT (no markdown fe
 
 Include practical survival tips and at least one hidden gem per day. Be specific — name actual restaurants, ger camps, and viewpoints whenever possible.`
 
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash",
-    systemInstruction: config.SYSTEM_PROMPT 
-  });
-
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: {
-      maxOutputTokens: config.MAX_TOKENS_PLAN,
-      temperature: config.TEMPERATURE_PLAN,
-      responseMimeType: "application/json",
-      // Gemini 2.5 spends output tokens on a hidden "thinking" pass before
-      // emitting the JSON, which truncates multi-day plans. Disable thinking
-      // so the entire token budget goes to the actual answer.
-      thinkingConfig: { thinkingBudget: 0 }
-    }
-  });
+  const result = await withModelFallback(config.GEMINI_PLAN_MODELS, async (modelId) => {
+    const model = genAI.getGenerativeModel({
+      model: modelId,
+      systemInstruction: config.SYSTEM_PROMPT
+    })
+    return model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        maxOutputTokens: config.MAX_TOKENS_PLAN,
+        temperature: config.TEMPERATURE_PLAN,
+        responseMimeType: "application/json",
+        // Gemini 2.5 spends output tokens on a hidden "thinking" pass before
+        // emitting the JSON, which truncates multi-day plans. Disable thinking
+        // so the entire token budget goes to the actual answer.
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    })
+  })
 
   const text = result.response.text();
 

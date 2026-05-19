@@ -4,6 +4,17 @@ dotenv.config()
 
 export default {
   MODEL_ID: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+  // Fallback chains — all three are live as of 2026-05. gemini-2.5-flash is
+  // best quality but periodically returns 503 "high demand"; the request then
+  // falls through to flash-latest, then the lighter flash-lite.
+  GEMINI_CHAT_MODELS: (process.env.GEMINI_CHAT_MODELS || 'gemini-2.5-flash,gemini-flash-latest,gemini-2.5-flash-lite')
+    .split(',')
+    .map(model => model.trim())
+    .filter(Boolean),
+  GEMINI_PLAN_MODELS: (process.env.GEMINI_PLAN_MODELS || 'gemini-2.5-flash,gemini-flash-latest,gemini-2.5-flash-lite')
+    .split(',')
+    .map(model => model.trim())
+    .filter(Boolean),
   AWS_REGION: process.env.AWS_REGION || 'us-east-1',
   MAX_TOKENS_CHAT: 4096,
   MAX_TOKENS_PLAN: 8192,
