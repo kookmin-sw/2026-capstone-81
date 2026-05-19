@@ -48,12 +48,19 @@ function AIPanel({ onClose }) {
     setThinking(true)
     try {
       const reply = await chatWithAI(history, msg)
+      // The model appends a [MAP_UPDATE]{...}[/MAP_UPDATE] block for map sync.
+      // This panel has no map — strip the block (and any unterminated trailing
+      // block, in case the reply was truncated) so it never shows as text.
+      const cleanReply = reply
+        .replace(/\s*\[MAP_UPDATE\][\s\S]*?\[\/MAP_UPDATE\]/g, '')
+        .replace(/\s*\[MAP_UPDATE\][\s\S]*$/, '')
+        .trim()
       setHistory(prev => [
         ...prev,
         { role: 'user', parts: [{ text: msg }] },
-        { role: 'model', parts: [{ text: reply }] },
+        { role: 'model', parts: [{ text: cleanReply }] },
       ])
-      setMessages(prev => [...prev, { role: 'ai', text: reply }])
+      setMessages(prev => [...prev, { role: 'ai', text: cleanReply }])
     } catch (e) {
       setMessages(prev => [...prev, {
         role: 'ai',

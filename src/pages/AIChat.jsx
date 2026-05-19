@@ -7,16 +7,21 @@ import { useLang } from '../context/LangContext'
 import BottomNav from '../components/BottomNav'
 import { chatWithAI } from '../utils/api'
 
-// Parse [MAP_UPDATE]...[/MAP_UPDATE] from AI response text
+// Parse [MAP_UPDATE]...[/MAP_UPDATE] from AI response text. Always strips the
+// block from the displayed text — including an unterminated trailing block if
+// the reply was truncated — so the raw JSON never shows to the user.
 function parseMapUpdate(text) {
+  const cleanText = text
+    .replace(/\s*\[MAP_UPDATE\][\s\S]*?\[\/MAP_UPDATE\]/g, '')
+    .replace(/\s*\[MAP_UPDATE\][\s\S]*$/, '')
+    .trim()
   const match = text.match(/\[MAP_UPDATE\]([\s\S]*?)\[\/MAP_UPDATE\]/)
-  if (!match) return { places: null, cleanText: text }
+  if (!match) return { places: null, cleanText }
   try {
     const data = JSON.parse(match[1].trim())
-    const cleanText = text.replace(/\s*\[MAP_UPDATE\][\s\S]*?\[\/MAP_UPDATE\]/, '').trim()
     return { places: Array.isArray(data.places) && data.places.length > 0 ? data.places : null, cleanText }
   } catch {
-    return { places: null, cleanText: text }
+    return { places: null, cleanText }
   }
 }
 
