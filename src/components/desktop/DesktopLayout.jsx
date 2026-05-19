@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
-import { Search, Bell, Bookmark, ChevronDown, Send, Sparkles, MapPin, X } from 'lucide-react'
+import { Search, ChevronDown, Send, Sparkles, MapPin, X } from 'lucide-react'
 import DesktopSidebar from './DesktopSidebar'
 import { chatWithAI } from '../../utils/api'
 
@@ -208,12 +208,6 @@ export default function DesktopLayout({ children }) {
             className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center flex-shrink-0"
           >
             <Search size={15} className="text-white" />
-          </button>
-          <button className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-            <Bell size={16} className="text-gray-500" />
-          </button>
-          <button className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-            <Bookmark size={16} className="text-gray-500" />
           </button>
           <button
             onClick={() => navigate(user ? '/profile' : '/login')}
