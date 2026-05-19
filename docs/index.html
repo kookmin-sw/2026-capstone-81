@@ -344,6 +344,20 @@
     .screenshot-info { padding: 20px 22px; }
     .screenshot-info h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; color: var(--ink); }
     .screenshot-info p { font-size: 0.85rem; color: var(--slate); font-weight: 500; }
+    /* Real screenshot image — shown when the file exists, otherwise the
+       sibling .screenshot-placeholder is revealed via the img onerror. */
+    .screenshot-shot {
+      display: block; width: 100%; aspect-ratio: 16/10;
+      object-fit: cover; object-position: top center;
+      background: var(--mint);
+    }
+    /* Portrait (mobile) screenshots: show the whole screen, no cropping. */
+    .screenshot-shot.is-portrait {
+      object-fit: contain; object-position: center; padding: 14px;
+      background:
+        radial-gradient(circle at 70% 20%, rgba(251,191,36,0.25) 0%, transparent 55%),
+        linear-gradient(135deg, var(--mint) 0%, var(--cream) 100%);
+    }
 
     /* ── DEMO VIDEO ── */
     .video-wrapper {
@@ -778,44 +792,58 @@
       <p class="section-sub">모바일부터 데스크탑까지 하나의 코드베이스로 완성된 UI.</p>
     </div>
     <div class="screenshots-grid">
+      <!-- 스크린샷: docs/screenshots/ 폴더에 아래 파일명으로 이미지를 넣으면
+           자동으로 표시됩니다. 파일이 없으면 컬러 플레이스홀더가 보입니다. -->
       <div class="screenshot-card fade-in">
-        <div class="screenshot-placeholder">
-          <div class="ph-icon">🤖</div>
-          <p>AI 챗봇 화면</p>
-        </div>
-        <div class="screenshot-info">
-          <h4>AI 챗봇</h4>
-          <p>Gemini 기반 실시간 대화 + 지도 연동</p>
-        </div>
-      </div>
-      <div class="screenshot-card fade-in">
-        <div class="screenshot-placeholder">
+        <img class="screenshot-shot is-portrait" src="screenshots/planner.png" alt="AI 여행 플래너 화면"
+             loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="screenshot-placeholder" style="display:none;">
           <div class="ph-icon">🗓️</div>
-          <p>여행 플래너 화면</p>
+          <p>AI 여행 플래너 화면</p>
         </div>
         <div class="screenshot-info">
           <h4>AI 여행 플래너</h4>
-          <p>맞춤 일정 자동 생성</p>
+          <p>관심사 · 예산 · 페이스 기반 맞춤 일정 생성</p>
         </div>
       </div>
       <div class="screenshot-card fade-in">
-        <div class="screenshot-placeholder">
+        <img class="screenshot-shot" src="screenshots/map.png" alt="인터랙티브 지도 화면"
+             loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="screenshot-placeholder" style="display:none;">
           <div class="ph-icon">🗺️</div>
           <p>인터랙티브 지도 화면</p>
         </div>
         <div class="screenshot-info">
           <h4>인터랙티브 지도</h4>
-          <p>여행지 마커 + AI 실시간 연동</p>
+          <p>아이막별 명소 탐색 + 카테고리 필터</p>
         </div>
       </div>
       <div class="screenshot-card fade-in">
-        <div class="screenshot-placeholder">
-          <div class="ph-icon">🏔️</div>
-          <p>여행지 탐색 화면</p>
+        <img class="screenshot-shot" src="screenshots/home.png" alt="홈 대시보드 화면"
+             loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="screenshot-placeholder" style="display:none;">
+          <div class="ph-icon">🏠</div>
+          <p>홈 대시보드 화면</p>
         </div>
         <div class="screenshot-info">
-          <h4>여행지 탐색</h4>
-          <p>12개 이상 지역, 카테고리 필터</p>
+          <h4>홈 대시보드</h4>
+          <p>실시간 날씨 · 몽골 축제 · 추천 여행지</p>
+        </div>
+      </div>
+      <div class="screenshot-card fade-in">
+        <img class="screenshot-shot" src="screenshots/profile.png" alt="내 프로필 화면"
+             loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="screenshot-placeholder" style="display:none;">
+          <div class="ph-icon">👤</div>
+          <p>내 프로필 화면</p>
+        </div>
+        <div class="screenshot-info">
+          <h4>내 프로필</h4>
+          <p>여행 기록 · 저장한 장소 · 주간 날씨</p>
         </div>
       </div>
     </div>
