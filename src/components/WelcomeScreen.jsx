@@ -8,33 +8,41 @@ import { ArrowRight } from 'lucide-react'
 // button. Lets the visitor pick a language up front since the whole app is
 // multilingual.
 
+const HERO_PHOTO = '/images/khuvsgul-lake-luxury.jpg'
+
 const COPY = {
   kr: {
-    badge: '국민대학교 2026 캡스톤 디자인 · 팀 81',
     titleStart: 'AI와 떠나는\n',
     titleHighlight: '몽골 여행',
     titleEnd: '의 새로운 방식',
     sub: 'Google Gemini 기반 AI 챗봇 · 맞춤형 일정 자동 생성 · 인터랙티브 지도 · 커뮤니티 블로그를 하나의 앱에서.',
     pickLang: '언어 선택',
     cta: '시작하기',
+    f1: 'AI 플래너',
+    f2: '인터랙티브 지도',
+    f3: '블로그 커뮤니티',
   },
   en: {
-    badge: 'Kookmin University 2026 Capstone · Team 81',
     titleStart: 'A new way to travel\n',
     titleHighlight: 'Mongolia',
     titleEnd: ' with AI',
     sub: 'AI chatbot, auto-generated itineraries, an interactive map and a community blog — all in one app.',
     pickLang: 'Language',
     cta: 'Get Started',
+    f1: 'AI Planner',
+    f2: 'Interactive Map',
+    f3: 'Travel Blog',
   },
   mn: {
-    badge: 'Күнмин Их Сургууль · 2026 Capstone · Баг 81',
     titleStart: '',
     titleHighlight: 'Монгол',
     titleEnd: 'д аялах\nшинэ арга AI-тай',
     sub: 'AI чатбот, автомат хуваарь үүсгэгч, интерактив газрын зураг, нийтийн блог — бүгд нэг апп дотор.',
     pickLang: 'Хэл',
     cta: 'Эхлэх',
+    f1: 'AI төлөвлөгч',
+    f2: 'Газрын зураг',
+    f3: 'Блог нийгэмлэг',
   },
 }
 
@@ -77,12 +85,24 @@ export default function WelcomeScreen({ onClose }) {
       className={`fixed inset-0 z-[100] overflow-y-auto transition-opacity duration-300 ${
         closing ? 'opacity-0' : 'opacity-100'
       }`}
-      style={{
-        background:
-          'linear-gradient(135deg, #ecfdf5 0%, #fef9c3 45%, #e0f2fe 100%)',
-      }}
     >
-      {/* Soft decorative blobs — pure CSS, no animation library. */}
+      {/* Nature photo background (Khuvsgul Lake) — softened with a light
+          pastel wash so the page stays bright and dreamy, not dark. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${HERO_PHOTO})` }}
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(135deg, rgba(236,253,245,0.82) 0%, rgba(254,249,195,0.82) 45%, rgba(224,242,254,0.82) 100%)',
+        }}
+      />
+
+      {/* Soft decorative blobs */}
       <div className="pointer-events-none absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full bg-emerald-300/30 blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 -right-32 w-[380px] h-[380px] rounded-full bg-amber-200/40 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 left-1/4 w-[420px] h-[420px] rounded-full bg-sky-200/40 blur-3xl" />
@@ -115,8 +135,25 @@ export default function WelcomeScreen({ onClose }) {
             {c.sub}
           </p>
 
+          {/* Feature highlights */}
+          <div style={reveal(3)} className="mt-6 grid grid-cols-3 gap-2.5 w-full max-w-sm">
+            {[
+              { emoji: '✨', label: c.f1 },
+              { emoji: '🗺️', label: c.f2 },
+              { emoji: '📝', label: c.f3 },
+            ].map((f, i) => (
+              <div
+                key={i}
+                className="bg-white/75 backdrop-blur rounded-2xl border border-emerald-100 shadow-sm px-2 py-3 flex flex-col items-center gap-1"
+              >
+                <span className="text-2xl">{f.emoji}</span>
+                <span className="text-[11px] font-bold text-gray-700 leading-tight text-center">{f.label}</span>
+              </div>
+            ))}
+          </div>
+
           {/* Language picker */}
-          <div style={reveal(3)} className="mt-8 w-full max-w-sm">
+          <div style={reveal(4)} className="mt-6 w-full max-w-sm">
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
               {c.pickLang}
             </p>
@@ -141,7 +178,7 @@ export default function WelcomeScreen({ onClose }) {
           {/* CTA */}
           <button
             onClick={start}
-            style={reveal(4)}
+            style={reveal(5)}
             className="group mt-6 w-full max-w-sm py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-base shadow-xl shadow-emerald-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             {c.cta}
