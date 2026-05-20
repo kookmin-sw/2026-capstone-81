@@ -12,3 +12,6 @@ dist/
 dist-mobile/
 dist-desktop/
 
+# Claude Code local settings (per-developer)
+.claude/
+
