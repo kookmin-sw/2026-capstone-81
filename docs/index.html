@@ -795,7 +795,20 @@
       <!-- 스크린샷: docs/screenshots/ 폴더에 아래 파일명으로 이미지를 넣으면
            자동으로 표시됩니다. 파일이 없으면 컬러 플레이스홀더가 보입니다. -->
       <div class="screenshot-card fade-in">
-        <img class="screenshot-shot is-portrait" src="screenshots/planner.png" alt="AI 여행 플래너 화면"
+        <img class="screenshot-shot" src="screenshots/home.png" alt="홈 대시보드 화면"
+             loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="screenshot-placeholder" style="display:none;">
+          <div class="ph-icon">🏠</div>
+          <p>홈 대시보드 화면</p>
+        </div>
+        <div class="screenshot-info">
+          <h4>홈 대시보드</h4>
+          <p>실시간 날씨 · 몽골 축제 · 추천 여행지</p>
+        </div>
+      </div>
+      <div class="screenshot-card fade-in">
+        <img class="screenshot-shot is-portrait" src="screenshots/ai-planner.png" alt="AI 여행 플래너 화면"
              loading="lazy"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
         <div class="screenshot-placeholder" style="display:none;">
@@ -821,29 +834,29 @@
         </div>
       </div>
       <div class="screenshot-card fade-in">
-        <img class="screenshot-shot" src="screenshots/home.png" alt="홈 대시보드 화면"
+        <img class="screenshot-shot" src="screenshots/start.png" alt="시작 화면"
              loading="lazy"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
         <div class="screenshot-placeholder" style="display:none;">
-          <div class="ph-icon">🏠</div>
-          <p>홈 대시보드 화면</p>
+          <div class="ph-icon">✨</div>
+          <p>시작 화면</p>
         </div>
         <div class="screenshot-info">
-          <h4>홈 대시보드</h4>
-          <p>실시간 날씨 · 몽골 축제 · 추천 여행지</p>
+          <h4>시작 화면</h4>
+          <p>Nomadiq의 첫인상 — 몽골의 매력을 한 눈에</p>
         </div>
       </div>
       <div class="screenshot-card fade-in">
-        <img class="screenshot-shot" src="screenshots/profile.png" alt="내 프로필 화면"
+        <img class="screenshot-shot" src="screenshots/login.png" alt="로그인 화면"
              loading="lazy"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
         <div class="screenshot-placeholder" style="display:none;">
-          <div class="ph-icon">👤</div>
-          <p>내 프로필 화면</p>
+          <div class="ph-icon">🔐</div>
+          <p>로그인 화면</p>
         </div>
         <div class="screenshot-info">
-          <h4>내 프로필</h4>
-          <p>여행 기록 · 저장한 장소 · 주간 날씨</p>
+          <h4>로그인</h4>
+          <p>Firebase Auth — 이메일 · Google 로그인 지원</p>
         </div>
       </div>
     </div>
