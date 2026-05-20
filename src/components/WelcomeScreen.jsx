@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { NomadLogoIcon } from './NomadLogo'
 import { ArrowRight } from 'lucide-react'
@@ -45,6 +46,7 @@ const LANGS = [
 
 export default function WelcomeScreen({ onClose }) {
   const { lang, setLang } = useLang()
+  const navigate = useNavigate()
   const [closing, setClosing] = useState(false)
   const [shown, setShown] = useState(false)
   const c = COPY[lang] ?? COPY.kr
@@ -55,9 +57,11 @@ export default function WelcomeScreen({ onClose }) {
     return () => cancelAnimationFrame(id)
   }, [])
 
+  // Close the overlay and land the visitor on the home page (regardless of
+  // whatever URL they arrived at).
   const start = () => {
     setClosing(true)
-    setTimeout(() => onClose?.(), 380)
+    setTimeout(() => { navigate('/home'); onClose?.() }, 380)
   }
 
   // Staggered slide-up reveal helper.
