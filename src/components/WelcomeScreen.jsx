@@ -16,6 +16,7 @@ const COPY = {
     sub: '명소부터 AI 일정까지 — 몽골 여행의 모든 것을 한 곳에서.',
     pickLang: '언어 선택',
     cta: '시작하기',
+    team: '팀 소개 보기',
     f1: 'AI 맞춤 여행 플래너',
     f2: '명소 · 박물관 탐색',
     f3: '현지 꿀팁 & 필수 앱',
@@ -26,6 +27,7 @@ const COPY = {
     sub: 'From hidden gems to AI itineraries — everything for Mongolia in one place.',
     pickLang: 'Language',
     cta: 'Get Started',
+    team: 'Meet the team',
     f1: 'AI-powered trip planner',
     f2: 'Explore sights & museums',
     f3: 'Local tips & essential apps',
@@ -36,11 +38,14 @@ const COPY = {
     sub: 'Үзвэр газраас AI хуваарь хүртэл — Монгол аяллын бүхэн нэг дор.',
     pickLang: 'Хэл',
     cta: 'Эхлэх',
+    team: 'Багийн танилцуулга',
     f1: 'AI аялал төлөвлөгч',
     f2: 'Үзвэр газар, музей',
     f3: 'Орон нутгийн зөвлөгөө, апп',
   },
 }
+
+const TEAM_URL = 'https://kookmin-sw.github.io/2026-capstone-81/'
 
 const LANGS = [
   { key: 'kr', label: '한국어', flag: '🇰🇷' },
@@ -172,6 +177,17 @@ export default function WelcomeScreen({ onClose }) {
             {c.cta}
             <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
+
+          {/* Team intro — opens the project's GitHub Pages page in a new tab */}
+          <a
+            href={TEAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={reveal(8)}
+            className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/70 hover:text-[#F6BC1A] underline-offset-4 hover:underline transition-colors"
+          >
+            {c.team} →
+          </a>
         </div>
       </div>
     </div>
