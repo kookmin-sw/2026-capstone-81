@@ -11,6 +11,7 @@ import AIChat from './pages/AIChat'
 import SavedTrip from './pages/SavedTrip'
 import MongolianApps from './pages/MongolianApps'
 import MobilePreview from './pages/MobilePreview'
+import About from './pages/About'
 
 // Desktop pages
 import DesktopLayout from './components/desktop/DesktopLayout'
@@ -91,6 +92,7 @@ function DesktopApp() {
         <Route path="/post/:id" element={<UserBlogDetail />} />
         <Route path="/trip/:id" element={<ProtectedRoute><SavedTrip /></ProtectedRoute>} />
         <Route path="/apps" element={<MongolianApps />} />
+        <Route path="/about" element={<About />} />
         <Route path="/preview" element={<MobilePreview />} />
         <Route path="/write" element={<ProtectedRoute><WriteBlog /></ProtectedRoute>} />
         <Route path="/saved" element={<ProtectedRoute><DesktopSaved /></ProtectedRoute>} />
@@ -123,6 +125,7 @@ function MobileApp() {
       <Route path="/budget" element={<Budget />} />
       <Route path="/restaurants" element={<Restaurants />} />
       <Route path="/apps" element={<MongolianApps />} />
+      <Route path="/about" element={<About />} />
       <Route path="/trip/:id" element={<ProtectedRoute><SavedTrip /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

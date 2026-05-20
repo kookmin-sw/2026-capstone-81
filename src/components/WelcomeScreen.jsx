@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { NomadLogoIcon } from './NomadLogo'
 import { Sparkles, MapPin, Compass, ArrowRight } from 'lucide-react'
@@ -45,7 +46,6 @@ const COPY = {
   },
 }
 
-const TEAM_URL = 'https://kookmin-sw.github.io/2026-capstone-81/'
 
 const LANGS = [
   { key: 'kr', label: '한국어', flag: '🇰🇷' },
@@ -55,9 +55,16 @@ const LANGS = [
 
 export default function WelcomeScreen({ onClose }) {
   const { lang, setLang } = useLang()
+  const navigate = useNavigate()
   const [closing, setClosing] = useState(false)
   const [shown, setShown] = useState(false)
   const c = COPY[lang] ?? COPY.kr
+
+  const goTeam = () => {
+    // Close the overlay, then navigate to the in-app intro page.
+    setClosing(true)
+    setTimeout(() => { onClose?.(); navigate('/about') }, 380)
+  }
 
   // Trigger the entrance animation one frame after mount.
   useEffect(() => {
@@ -178,16 +185,15 @@ export default function WelcomeScreen({ onClose }) {
             <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
 
-          {/* Team intro — opens the project's GitHub Pages page in a new tab */}
-          <a
-            href={TEAM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* Team intro — opens the in-app /about page */}
+          <button
+            type="button"
+            onClick={goTeam}
             style={reveal(8)}
             className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/70 hover:text-[#F6BC1A] underline-offset-4 hover:underline transition-colors"
           >
             {c.team} →
-          </a>
+          </button>
         </div>
       </div>
     </div>
