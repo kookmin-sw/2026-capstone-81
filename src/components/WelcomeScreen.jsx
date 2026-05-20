@@ -86,17 +86,8 @@ export default function WelcomeScreen({ onClose }) {
       <div className="relative min-h-full flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md flex flex-col items-center text-center">
 
-          {/* Team badge */}
-          <div
-            style={reveal(0)}
-            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-emerald-100 shadow-sm rounded-full px-4 py-1.5 mb-8"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[12px] font-bold text-emerald-700">{c.badge}</span>
-          </div>
-
           {/* Logo with yellow glow */}
-          <div style={reveal(1)} className="relative mb-6">
+          <div style={reveal(0)} className="relative mb-6">
             <div className="absolute inset-0 -m-6 bg-yellow-300/60 blur-3xl rounded-full" />
             <div className="relative bg-white rounded-[28px] p-3 shadow-xl shadow-emerald-200/50 ring-1 ring-emerald-100">
               <NomadLogoIcon size={88} />
@@ -105,7 +96,7 @@ export default function WelcomeScreen({ onClose }) {
 
           {/* Title */}
           <h1
-            style={reveal(2)}
+            style={reveal(1)}
             className="text-[40px] md:text-[44px] leading-[1.05] font-black text-gray-900 whitespace-pre-line tracking-tight"
           >
             {c.titleStart}
@@ -116,12 +107,12 @@ export default function WelcomeScreen({ onClose }) {
           </h1>
 
           {/* Subtitle */}
-          <p style={reveal(3)} className="mt-5 max-w-md text-[15px] text-gray-500 leading-relaxed">
+          <p style={reveal(2)} className="mt-5 max-w-md text-[15px] text-gray-500 leading-relaxed">
             {c.sub}
           </p>
 
           {/* Language picker */}
-          <div style={reveal(4)} className="mt-8 w-full max-w-sm">
+          <div style={reveal(3)} className="mt-8 w-full max-w-sm">
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
               {c.pickLang}
             </p>
@@ -146,7 +137,7 @@ export default function WelcomeScreen({ onClose }) {
           {/* CTA */}
           <button
             onClick={start}
-            style={reveal(5)}
+            style={reveal(4)}
             className="group mt-6 w-full max-w-sm py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-base shadow-xl shadow-emerald-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             {c.cta}
