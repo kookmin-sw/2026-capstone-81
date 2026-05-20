@@ -85,27 +85,20 @@ export default function WelcomeScreen({ onClose }) {
       className={`fixed inset-0 z-[100] overflow-y-auto transition-opacity duration-300 ${
         closing ? 'opacity-0' : 'opacity-100'
       }`}
+      style={{
+        // The nature photo + pastel wash live on the scroll container itself
+        // (rather than an absolute child), so when content scrolls the
+        // background stays fixed and the underlying page never bleeds through.
+        backgroundImage: `linear-gradient(135deg, rgba(236,253,245,0.82) 0%, rgba(254,249,195,0.82) 45%, rgba(224,242,254,0.82) 100%), url(${HERO_PHOTO})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
     >
-      {/* Nature photo background (Khuvsgul Lake) — softened with a light
-          pastel wash so the page stays bright and dreamy, not dark. */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${HERO_PHOTO})` }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(236,253,245,0.82) 0%, rgba(254,249,195,0.82) 45%, rgba(224,242,254,0.82) 100%)',
-        }}
-      />
-
-      {/* Soft decorative blobs */}
-      <div className="pointer-events-none absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full bg-emerald-300/30 blur-3xl" />
-      <div className="pointer-events-none absolute top-1/3 -right-32 w-[380px] h-[380px] rounded-full bg-amber-200/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 left-1/4 w-[420px] h-[420px] rounded-full bg-sky-200/40 blur-3xl" />
+      {/* Soft decorative blobs (fixed so they don't drift on scroll either) */}
+      <div className="pointer-events-none fixed -top-24 -left-24 w-[420px] h-[420px] rounded-full bg-emerald-300/30 blur-3xl" />
+      <div className="pointer-events-none fixed top-1/3 -right-32 w-[380px] h-[380px] rounded-full bg-amber-200/40 blur-3xl" />
+      <div className="pointer-events-none fixed -bottom-32 left-1/4 w-[420px] h-[420px] rounded-full bg-sky-200/40 blur-3xl" />
 
       <div className="relative min-h-full flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md flex flex-col items-center text-center">
