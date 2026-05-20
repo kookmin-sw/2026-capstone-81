@@ -1,14 +1,20 @@
 import { Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
+import { useTilt } from '../hooks/useTilt'
 
 export default function BlogCard({ blog }) {
   const navigate = useNavigate()
   const { lang } = useLang()
+  const tilt = useTilt(8)
 
   return (
     <div
-      className="flex-shrink-0 w-48 rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100/80 cursor-pointer active:scale-[0.98] transition-all"
+      ref={tilt.ref}
+      onMouseMove={tilt.onMouseMove}
+      onMouseLeave={tilt.onMouseLeave}
+      style={tilt.style}
+      className="flex-shrink-0 w-48 rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100/80 cursor-pointer active:scale-[0.98] hover:shadow-lg"
       onClick={() => navigate(`/blog/${blog.id}`)}
     >
       <div className="relative h-28">

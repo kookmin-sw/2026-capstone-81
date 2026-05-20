@@ -1,15 +1,21 @@
 import { Star, Clock, CalendarDays } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
+import { useTilt } from '../hooks/useTilt'
 
 export default function DestinationCard({ location, size = 'sm' }) {
   const navigate = useNavigate()
   const { lang } = useLang()
+  const tilt = useTilt(size === 'lg' ? 6 : 8)
 
   if (size === 'lg') {
     return (
       <div
-        className="rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100/80 cursor-pointer active:scale-[0.99] transition-all"
+        ref={tilt.ref}
+        onMouseMove={tilt.onMouseMove}
+        onMouseLeave={tilt.onMouseLeave}
+        style={tilt.style}
+        className="rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100/80 cursor-pointer active:scale-[0.99] hover:shadow-xl"
         onClick={() => navigate(`/explore/${location.id}`)}
       >
         <div className="relative h-48">
@@ -45,7 +51,11 @@ export default function DestinationCard({ location, size = 'sm' }) {
 
   return (
     <div
-      className="flex-shrink-0 w-36 rounded-2xl overflow-hidden shadow-sm border border-gray-100/80 cursor-pointer active:scale-[0.98] transition-all bg-white"
+      ref={tilt.ref}
+      onMouseMove={tilt.onMouseMove}
+      onMouseLeave={tilt.onMouseLeave}
+      style={tilt.style}
+      className="flex-shrink-0 w-36 rounded-2xl overflow-hidden shadow-sm border border-gray-100/80 cursor-pointer active:scale-[0.98] hover:shadow-lg bg-white"
       onClick={() => navigate(`/explore/${location.id}`)}
     >
       <div className="relative h-24 overflow-hidden">
