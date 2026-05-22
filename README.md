@@ -373,11 +373,11 @@ capstone-2026-81/
 
 | 학번 | 이름 | 역할 | 주요 담당 | GitHub |
 |------|------|------|----------|--------|
-| 20233121 | 헝거르졸 |팀장 · Data  | 여행지 데이터 수집, Vitest 테스트 | [@Khongorzullll](https://github.com/Khongorzullll) |
+| 20233121 | 헝거르졸 |Integration + DevOps| 시스템 통합 실행 관리 및 연동| [@Khongorzullll(https://github.com/Khongorzullll) |
 | 20223579 | 노민 에르덴 | AI / Frontend | Gemini 챗봇 통합, 여행 플래너 | [@nomin27n](https://github.com/nomin27n) |
-| 20213008 | 빌랙자르갈 | Backend · DevOps | Express API, AWS Amplify 배포 | [@bilgee1121]([https://github.com/bilgee1121]) |
-| 20223582 | 체벡수랭홀랑 | Frontend · UI/UX | 데스크탑 레이아웃, 다국어 시스템 | [@yerimlee224](https://github.com/yerimlee224) |
-| 20233064 | 오토공체체그 | Frontend · Mobile | Capacitor Android 빌드, 모바일 페이지 | [@Otgon88](https://github.com/Otgon88) |
+| 20213008 | 빌랙자르갈 | Frontend · UI/UX | React Native UI , AWS Amplify 배포 | [@bilgee1121([https://github.com/bilgee1121]) |
+| 20223582 | 체벡수랭홀랑 | Map + Location Data | 지도 기능, 여행지 데이터 관리 | [@yerimlee224](https://github.com/yerimlee224) |
+| 20233064 | 오토공체체그 | Backend + Aws Server | AWS/Render서버 구축, 데이터 관리 | [@Otgon88](https://github.com/Otgon88) |
 
 ---
 
