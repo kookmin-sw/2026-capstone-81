@@ -83,8 +83,8 @@ export default function AIPlanner() {
         langLabels[lang] || 'Korean'
       )
       setResult(plan)
-      const days = plan?.itinerary?.length ?? plan?.length ?? 0
-      if (days) setOpenDay(1)
+      const numDays = plan?.itinerary?.length ?? plan?.length ?? 0
+      if (numDays) setOpenDay(1)
     } catch {
       setGenError(lang === 'kr' ? '일정 생성에 실패했습니다. 다시 시도해주세요.' : 'Failed to generate. Please try again.')
     } finally {
@@ -207,7 +207,7 @@ export default function AIPlanner() {
               <button onClick={() => { setResult(null); setOpenDay(null) }} className="text-sm text-primary font-semibold">{l.redo}</button>
             </div>
             <div className="space-y-2">
-              {result.map(day => {
+              {(result.itinerary || result).map(day => {
                 const isOpen = openDay === day.day
                 const driveText = formatDriveTime(day.estimated_drive_km, lang)
                 return (
