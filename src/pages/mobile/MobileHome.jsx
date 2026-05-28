@@ -48,7 +48,7 @@ function wxDayMobile(dateStr, lang) {
 function wxWindDirMobile(deg, lang) {
   const idx = Math.round(deg / 45) % 8
   return ([{ kr:'북',en:'N',mn:'Х'},{kr:'북동',en:'NE',mn:'ХЗ'},{kr:'동',en:'E',mn:'З'},{kr:'남동',en:'SE',mn:'ӨЗ'},
-    {kr:'남',en:'S',mn:'Ө'},{kr:'남서',en:'SW',mn:'ӨД'},{kr:'서',en:'W',mn:'Д'},{kr:'북서',en:'NW',mn:'ХД'}])[idx]?.[lang] ?? 'N'
+    {kr:'남',en:'S',mn:'Ө'},{kr:'남서',en:'SW',mn:'ӨБ'},{kr:'서',en:'W',mn:'Б'},{kr:'북서',en:'NW',mn:'ХБ'}])[idx]?.[lang] ?? 'N'
 }
 
 function WxIcon({ code, size = 32 }) {

@@ -30,7 +30,7 @@ function AIPanel({ onClose }) {
   const locationSuggestions = [
     { mn: 'Хөвсгөл, Увс нуур орчим', kr: '홉스골, 우브스 호수 주변', en: 'Khuvsgul, Uvs Lake area' },
     { mn: 'Төв аймаг, Тэрэлж орчим', kr: '투브 아이막, 테를지 주변', en: 'Tuv aimag, Terelj area' },
-    { mn: 'Өмнөговь, говийн бус', kr: '남고비, 고비 일대', en: 'Omnogovi, Gobi area' },
+    { mn: 'Өмнөговь, говийн бүс', kr: '남고비, 고비 일대', en: 'Omnogovi, Gobi area' },
     { mn: 'Бусад (өөр газар)', kr: '기타 (다른 지역)', en: 'Other area' },
   ]
 

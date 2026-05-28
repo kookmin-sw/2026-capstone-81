@@ -79,7 +79,7 @@ const GROUPS = [
 ]
 const STAYS = [
   { key: 'hotel',      label: { kr: '호텔',         en: 'Hotel',      mn: 'Зочид буудал' }, emoji: '🏨' },
-  { key: 'guesthouse', label: { kr: '게스트하우스', en: 'Guesthouse', mn: 'Гэстэйз'      }, emoji: '🏠' },
+  { key: 'guesthouse', label: { kr: '게스트하우스', en: 'Guesthouse', mn: 'Гэст хаус'      }, emoji: '🏠' },
   { key: 'ger',        label: { kr: '게르',         en: 'Ger Camp',   mn: 'Гэр бааз'     }, emoji: '⛺' },
   { key: 'mixed',      label: { kr: '혼합',         en: 'Mixed',      mn: 'Холимог'      }, emoji: '🎒' },
 ]

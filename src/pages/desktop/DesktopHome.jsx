@@ -85,8 +85,8 @@ function wxWindDir(deg, lang) {
   return ([
     { kr: '북', en: 'N', mn: 'Х' }, { kr: '북동', en: 'NE', mn: 'ХЗ' },
     { kr: '동', en: 'E', mn: 'З' }, { kr: '남동', en: 'SE', mn: 'ӨЗ' },
-    { kr: '남', en: 'S', mn: 'Ө' }, { kr: '남서', en: 'SW', mn: 'ӨД' },
-    { kr: '서', en: 'W', mn: 'Д' }, { kr: '북서', en: 'NW', mn: 'ХД' },
+    { kr: '남', en: 'S', mn: 'Ө' }, { kr: '남서', en: 'SW', mn: 'ӨБ' },
+    { kr: '서', en: 'W', mn: 'Б' }, { kr: '북서', en: 'NW', mn: 'ХБ' },
   ])[idx][lang] ?? 'N'
 }
 
