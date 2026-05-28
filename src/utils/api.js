@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const PLAN_MODELS  = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-const CHAT_MODELS  = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+const PLAN_MODELS  = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
+const CHAT_MODELS  = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
 
 const SYSTEM_PROMPT = `You are Nomadiq, an expert Mongolia travel guide AI assistant.
 Help users plan their Mongolia trips and answer questions about Mongolian culture, food, attractions, weather, visa, transportation, and travel tips.
