@@ -19,6 +19,13 @@ export async function chatWithAI(history, userMessage) {
   return data.reply
 }
 
+export async function getRecommendations(month, season, temp, events, groupType, budget, interests, langLabel) {
+  const data = await post('/api/recommend', {
+    month, season, temp, events, groupType, budget, interests, language: langLabel
+  })
+  return data.recommendations
+}
+
 export async function generatePlanWithAI(days, interestLabels, langLabel, focusLocations = null, startDate = null, departureCity = null, extra = {}) {
   const body = { days, interests: interestLabels, language: langLabel }
   if (focusLocations?.length) body.locations = focusLocations

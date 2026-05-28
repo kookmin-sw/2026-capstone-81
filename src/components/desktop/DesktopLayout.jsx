@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
 import { Search, ChevronDown, Send, Sparkles, MapPin, X } from 'lucide-react'
@@ -62,13 +62,14 @@ function AIPanel({ onClose }) {
       ])
       setMessages(prev => [...prev, { role: 'ai', text: cleanReply }])
     } catch (e) {
+      console.error('[Chatbot] chat failed', e)
       setMessages(prev => [...prev, {
         role: 'ai',
         text: lang === 'mn'
-          ? 'Алдаа гарлаа. Дахин оролдоно уу.'
+          ? `Алдаа гарлаа. Дахин оролдоно уу.\n${e.message}`
           : lang === 'kr'
-          ? '오류가 발생했습니다. 다시 시도해주세요.'
-          : 'An error occurred. Please try again.'
+          ? `오류가 발생했습니다. 다시 시도해주세요.\n${e.message}`
+          : `An error occurred. Please try again.\n${e.message}`
       }])
     } finally {
       setThinking(false)
@@ -185,8 +186,16 @@ export default function DesktopLayout({ children }) {
   const { lang } = useLang()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchQ, setSearchQ] = useState('')
   const [showAI, setShowAI] = useState(false)
+  const isPlannerRoute = location.pathname === '/planner'
+  const shouldShowAI = showAI
+
+  // Close chat whenever the user navigates to a different page
+  useEffect(() => {
+    setShowAI(false)
+  }, [location.pathname])
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -235,7 +244,7 @@ export default function DesktopLayout({ children }) {
           <button
             onClick={() => setShowAI(v => !v)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all ${
-              showAI ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-primary text-white shadow-md shadow-primary/25'
+              shouldShowAI ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-primary text-white shadow-md shadow-primary/25'
             }`}
           >
             <Sparkles size={14} />
@@ -249,7 +258,7 @@ export default function DesktopLayout({ children }) {
         </div>
 
         {/* 플로팅 챗봇 팝업 */}
-        {showAI && <AIPanel onClose={() => setShowAI(false)} />}
+        {shouldShowAI && <AIPanel onClose={() => setShowAI(false)} />}
       </div>
 
     </div>

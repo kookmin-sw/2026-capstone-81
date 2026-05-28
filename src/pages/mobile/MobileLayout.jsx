@@ -3,12 +3,12 @@ import { useLang } from '../../context/LangContext'
 import { Home, Compass, Map, Sparkles, User, BookOpen, MessageCircle } from 'lucide-react'
 
 const tabs = [
-  { icon: Home,     path: '/home',    label: { kr: '홈',     en: 'Home',    mn: 'Нүүр'    } },
-  { icon: Compass,  path: '/explore', label: { kr: '탐색',   en: 'Explore', mn: 'Хайлт'   } },
-  { icon: Map,      path: '/map',     label: { kr: '지도',   en: 'Map',     mn: 'Зураг'   } },
-  { icon: Sparkles, path: '/planner', label: { kr: 'AI 플래너', en: 'AI',   mn: 'AI'      } },
-  { icon: BookOpen, path: '/blog',    label: { kr: '블로그', en: 'Blog',    mn: 'Блог'    } },
-  { icon: User,     path: '/profile', label: { kr: '프로필', en: 'Profile', mn: 'Профайл' } },
+  { icon: Home,      path: '/home',    label: { kr: '홈',     en: 'Home',    mn: 'Нүүр'   } },
+  { icon: Compass,   path: '/explore', label: { kr: '탐색',   en: 'Explore', mn: 'Хайлт'  } },
+  { icon: Map,       path: '/map',     label: { kr: '지도',   en: 'Map',     mn: 'Зураг'  } },
+  { icon: Sparkles,  path: '/planner', label: { kr: 'AI',     en: 'AI',      mn: 'AI'     } },
+  { icon: BookOpen,  path: '/blog',    label: { kr: '블로그', en: 'Blog',    mn: 'Блог'   } },
+  { icon: User,      path: '/profile', label: { kr: '프로필', en: 'Profile', mn: 'Профайл'} },
 ]
 
 export default function MobileLayout({ children }) {

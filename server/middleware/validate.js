@@ -79,3 +79,21 @@ export function validatePlan(req, res, next) {
 
   next()
 }
+
+export function validateRecommend(req, res, next) {
+  const { month, season, language } = req.body
+
+  if (!month || !Number.isInteger(month) || month < 1 || month > 12) {
+    return res.status(400).json({ error: 'month must be an integer 1-12', code: 'VALIDATION' })
+  }
+
+  if (!season || typeof season !== 'string') {
+    return res.status(400).json({ error: 'season is required', code: 'VALIDATION' })
+  }
+
+  if (!language || typeof language !== 'string') {
+    return res.status(400).json({ error: 'language is required', code: 'VALIDATION' })
+  }
+
+  next()
+}

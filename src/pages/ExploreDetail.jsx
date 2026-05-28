@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
 import { locations } from '../data/locations'
 import { museums } from '../data/museums'
+import { getTransportForLoc } from '../data/transportData'
 import { useWikiImage } from '../hooks/useWikiImage'
 import BottomNav from '../components/BottomNav'
 
@@ -97,11 +98,13 @@ export default function ExploreDetail() {
   const heroImage = useWikiImage(loc.wikiTitle, loc.image)
 
   const TABS = [
-    { key: 'intro',    label: { kr: '소개',   en: 'About',   mn: 'Тойм'   } },
-    { key: 'blogger',  label: { kr: '블로거', en: 'Bloggers',mn: 'Блогер' } },
-    { key: 'info',     label: { kr: '정보',   en: 'Info',    mn: 'Мэдээлэл'} },
-    { key: 'review',   label: { kr: '후기',   en: 'Reviews', mn: 'Сэтгэгдэл'} },
+    { key: 'intro',     label: { kr: '소개',   en: 'About',      mn: 'Тойм'     } },
+    { key: 'transport', label: { kr: '교통',   en: 'Transport',  mn: 'Тээвэр'   } },
+    { key: 'info',      label: { kr: '정보',   en: 'Info',       mn: 'Мэдээлэл' } },
+    { key: 'review',    label: { kr: '후기',   en: 'Reviews',    mn: 'Сэтгэгдэл'} },
   ]
+
+  const transport = getTransportForLoc(loc)
 
   return (
     <div className="flex flex-col h-full bg-[#F8F9FB]">
@@ -284,6 +287,100 @@ export default function ExploreDetail() {
               )
             })()}
           </>
+        )}
+
+        {/* 교통 탭 */}
+        {activeTab === 'transport' && (
+          <div className="mt-2 px-4 py-4 space-y-3">
+            {/* UB 기준 안내 */}
+            <div className="flex items-center gap-2 mb-1">
+              <MapPin size={13} className="text-primary flex-shrink-0" />
+              <p className="text-[11px] text-gray-400">
+                {lang === 'kr' ? '울란바토르(UB) 기준 이동 방법' : lang === 'en' ? 'How to get there from Ulaanbaatar' : 'Улаанбаатараас хэрхэн очих'}
+              </p>
+            </div>
+
+            {transport ? transport.options.map((opt, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                {/* 헤더 */}
+                <div className="flex items-start gap-3 mb-3">
+                  <span className="text-2xl">{opt.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-gray-900">{opt.mode[lang] ?? opt.mode.en}</p>
+                    <div className="flex flex-wrap gap-3 mt-1">
+                      <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                        <Clock size={11} className="text-primary" />
+                        {opt.time[lang] ?? opt.time.en}
+                      </span>
+                      <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                        <span className="text-primary font-bold text-[11px]">₮</span>
+                        {opt.cost[lang] ?? opt.cost.en}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 메모 */}
+                <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                  {opt.note[lang] ?? opt.note.en}
+                </p>
+
+                {/* 관련 사이트 링크 */}
+                {opt.links.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {opt.links.map(link => (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/8 text-primary text-[11px] font-bold rounded-full border border-primary/20 active:scale-95 transition-transform"
+                      >
+                        🔗 {link.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )) : (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center text-gray-400">
+                <p className="text-2xl mb-2">🚧</p>
+                <p className="text-xs">
+                  {lang === 'kr' ? '교통 정보 준비 중' : lang === 'en' ? 'Transport info coming soon' : 'Тээврийн мэдээлэл удахгүй'}
+                </p>
+              </div>
+            )}
+
+            {/* 일반 팁 */}
+            <div className="bg-amber-50 rounded-2xl border border-amber-100 p-4">
+              <p className="text-xs font-black text-amber-800 mb-2">
+                {lang === 'kr' ? '💡 몽골 교통 팁' : lang === 'en' ? '💡 Mongolia Travel Tips' : '💡 Монголын тээврийн зөвлөмж'}
+              </p>
+              <ul className="space-y-1.5">
+                {(lang === 'kr' ? [
+                  '지방 이동 시 4WD(포르곤) 지프가 표준 교통수단입니다.',
+                  '몽골 도로 70%는 비포장 — 이동 시간 여유 있게 잡으세요.',
+                  '항공권은 성수기(6~9월) 최소 2주 전 예약 권장.',
+                  '현금(투그릭) 준비 필수 — 지방 지역 카드 불가.',
+                ] : lang === 'en' ? [
+                  '4WD jeeps (Furgon) are the standard vehicle for rural travel.',
+                  '70% of Mongolian roads are unpaved — allow extra travel time.',
+                  'Book flights 2+ weeks ahead in peak season (Jun–Sep).',
+                  'Carry cash (Tögrög) — card payment unavailable in remote areas.',
+                ] : [
+                  'Хөдөөд явахдаа 4WD (Фургон) жип стандарт тээвэр.',
+                  'Монголын замын 70% нь хайрган — нэмэлт цаг тооцоорой.',
+                  'Онгоцны тийз оргил улиралд (6–9 сар) 2 долоо хоногийн өмнө захиалаарай.',
+                  'Бэлэн мөнгө (Төгрөг) авч явах шаардлагатай — хөдөөд карт хүлээж авдаггүй.',
+                ]).map((tip, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[11px] text-amber-700">
+                    <span className="text-amber-400 mt-0.5 flex-shrink-0">✦</span>
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         )}
 
         {/* 정보 탭 */}

@@ -28,6 +28,8 @@ import DesktopBudget from './pages/desktop/DesktopBudget'
 import DesktopRestaurants from './pages/desktop/DesktopRestaurants'
 import DesktopSaved from './pages/desktop/DesktopSaved'
 import DesktopPacking from './pages/desktop/DesktopPacking'
+import DesktopTransport from './pages/desktop/DesktopTransport'
+import DesktopRecommend from './pages/desktop/DesktopRecommend'
 
 // Mobile pages
 import MobileHome from './pages/mobile/MobileHome'
@@ -36,6 +38,8 @@ import MobilePlanner from './pages/mobile/MobilePlanner'
 import MobileMap from './pages/mobile/MobileMap'
 import MobileProfile from './pages/mobile/MobileProfile'
 import MobileBlog from './pages/mobile/MobileBlog'
+import MobileTransport from './pages/mobile/MobileTransport'
+import MobileRecommend from './pages/mobile/MobileRecommend'
 
 // Shared pages (used in both mobile and desktop)
 import { BlogDetail } from './pages/Blog'
@@ -95,6 +99,8 @@ function DesktopApp() {
         <Route path="/about" element={<About />} />
         <Route path="/preview" element={<MobilePreview />} />
         <Route path="/write" element={<ProtectedRoute><WriteBlog /></ProtectedRoute>} />
+        <Route path="/transport" element={<DesktopTransport />} />
+        <Route path="/recommend" element={<ProtectedRoute><DesktopRecommend /></ProtectedRoute>} />
         <Route path="/saved" element={<ProtectedRoute><DesktopSaved /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><DesktopProfile /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
@@ -120,6 +126,8 @@ function MobileApp() {
       <Route path="/blog/:id" element={<BlogDetail />} />
       <Route path="/post/:id" element={<UserBlogDetail />} />
       <Route path="/write" element={<ProtectedRoute><WriteBlog /></ProtectedRoute>} />
+      <Route path="/transport" element={<MobileTransport />} />
+      <Route path="/recommend" element={<ProtectedRoute><MobileRecommend /></ProtectedRoute>} />
       <Route path="/chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
       <Route path="/culture" element={<Culture />} />
       <Route path="/budget" element={<Budget />} />

@@ -95,7 +95,7 @@ function isCredentialError(err) {
 function isThrottlingError(err) {
   return err.status === 429 ||
     err.code === 'RATE_LIMIT' ||
-    (err.message && /quota|rate limit|too many requests/i.test(err.message))
+    (err.message && /429|quota|rate limit|too many requests|high demand/i.test(err.message))
 }
 
 function isTimeoutError(err) {
@@ -113,7 +113,8 @@ function isAIError(err) {
     'GoogleGenerativeAIResponseError'
   ]
   return aiErrorNames.includes(err.name) ||
-    (err.status >= 500 && !isCredentialError(err))
+    (err.status >= 500 && !isCredentialError(err)) ||
+    (err.message && /500|502|503|service unavailable|generativeai/i.test(err.message))
 }
 
 function isValidationError(err) {

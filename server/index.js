@@ -2,8 +2,8 @@ import express from 'express'
 import dotenv from 'dotenv'
 import corsMiddleware from './middleware/cors.js'
 import { errorHandler } from './middleware/errorHandler.js'
-import { validateChat, validatePlan } from './middleware/validate.js'
-import { sendChatMessage, generateTravelPlan } from './services/gemini.js'
+import { validateChat, validatePlan, validateRecommend } from './middleware/validate.js'
+import { sendChatMessage, generateTravelPlan, generateRecommendations } from './services/gemini.js'
 import config from './config.js'
 
 dotenv.config()
@@ -35,6 +35,18 @@ app.post('/api/plan', validatePlan, async (req, res, next) => {
       locations, startDate, departureCity, budget, pace, groupType, accommodation,
     })
     res.json({ plan })
+  } catch (err) {
+    next(err)
+  }
+})
+
+app.post('/api/recommend', validateRecommend, async (req, res, next) => {
+  try {
+    const { month, season, temp, events, groupType, budget, interests, language } = req.body
+    const recommendations = await generateRecommendations(
+      month, season, temp || '', events || [], groupType, budget, interests || [], language
+    )
+    res.json({ recommendations })
   } catch (err) {
     next(err)
   }

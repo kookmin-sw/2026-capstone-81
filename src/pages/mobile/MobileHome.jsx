@@ -64,13 +64,6 @@ function WxIcon({ code, size = 32 }) {
   return <CloudLightning {...s} className="text-yellow-200" />
 }
 
-const FILTER_CHIPS = [
-  { key: 'all',      label: { kr: '전체',    en: 'All',      mn: 'Бүгд'      } },
-  { key: 'nature',   label: { kr: '자연',    en: 'Nature',   mn: 'Байгаль'   } },
-  { key: 'culture',  label: { kr: '문화',    en: 'Culture',  mn: 'Соёл'      } },
-  { key: 'history',  label: { kr: '역사',    en: 'History',  mn: 'Түүх'      } },
-  { key: 'activity', label: { kr: '액티비티', en: 'Adventure', mn: 'Адал явдал'} },
-]
 
 const CAT_BADGE = {
   nature:   { label: { kr: '자연', en: 'Nature', mn: 'Байгаль'    }, bg: 'bg-emerald-500' },
@@ -92,7 +85,6 @@ export default function MobileHome() {
   const navigate = useNavigate()
   const { lang } = useLang()
   const { user } = useAuth()
-  const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [weather, setWeather] = useState(null)
 
@@ -126,9 +118,7 @@ export default function MobileHome() {
 
   const province = loc => (REGION_LABEL[lang] ?? REGION_LABEL.en)[loc.region] ?? loc.region
 
-  const cards = locations
-    .filter(loc => filter === 'all' || loc.category === filter)
-    .slice(0, 6)
+  const cards = locations.slice(0, 6)
 
   const firstName = user?.displayName?.split(' ')[0]
 
@@ -183,49 +173,47 @@ export default function MobileHome() {
             </button>
           </div>
 
-          {/* 카테고리 칩 */}
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {FILTER_CHIPS.map(chip => (
-              <button
-                key={chip.key}
-                onClick={() => setFilter(chip.key)}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                  filter === chip.key ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {chip.label[lang]}
-              </button>
-            ))}
+          {/* 빠른 진입: AI 일정 | 교통 찾기 | 몽골 필수 앱 */}
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <button
+              onClick={() => navigate('/planner')}
+              className="bg-gradient-to-br from-primary to-emerald-400 rounded-2xl p-2.5 text-left active:scale-[0.97] transition-transform shadow-md shadow-primary/20"
+            >
+              <div className="text-xl mb-1">🤖</div>
+              <p className="text-white font-black text-[11px] leading-tight">
+                {lang === 'kr' ? 'AI 일정' : lang === 'en' ? 'AI Planner' : 'AI Төлөвлөгөө'}
+              </p>
+              <p className="text-white/75 text-[9px] leading-tight mt-0.5">
+                {lang === 'kr' ? '맞춤 일정' : lang === 'en' ? 'Itinerary' : 'Хуваарь'}
+              </p>
+            </button>
+
+            <button
+              onClick={() => navigate('/transport')}
+              className="bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl p-2.5 text-left active:scale-[0.97] transition-transform shadow-md shadow-blue-500/20"
+            >
+              <div className="text-xl mb-1">🚌</div>
+              <p className="text-white font-black text-[11px] leading-tight">
+                {lang === 'kr' ? '교통 찾기' : lang === 'en' ? 'Transport' : 'Тээвэр'}
+              </p>
+              <p className="text-white/75 text-[9px] leading-tight mt-0.5">
+                {lang === 'kr' ? '버스·항공' : lang === 'en' ? 'Bus · Flight' : 'Автобус · Нислэг'}
+              </p>
+            </button>
+
+            <button
+              onClick={() => navigate('/apps')}
+              className="bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl p-2.5 text-left active:scale-[0.97] transition-transform shadow-md shadow-indigo-500/20"
+            >
+              <div className="text-xl mb-1">📱</div>
+              <p className="text-white font-black text-[11px] leading-tight">
+                {lang === 'kr' ? '필수 앱' : lang === 'en' ? 'Apps' : 'Апп'}
+              </p>
+              <p className="text-white/75 text-[9px] leading-tight mt-0.5">
+                {lang === 'kr' ? 'UBcab · QPay' : lang === 'en' ? 'UBcab · QPay' : 'UBcab · QPay'}
+              </p>
+            </button>
           </div>
-        </div>
-
-        {/* ── 빠른 진입: AI 플래너 + 몽골 필수 앱 (2-card row) ── */}
-        <div className="mx-4 mt-4 grid grid-cols-2 gap-2.5">
-          <button
-            onClick={() => navigate('/planner')}
-            className="bg-gradient-to-br from-primary to-emerald-400 rounded-2xl p-3 text-left active:scale-[0.97] transition-transform shadow-md shadow-primary/20"
-          >
-            <div className="text-2xl mb-1">🤖</div>
-            <p className="text-white font-black text-[13px] leading-tight">
-              {lang === 'kr' ? 'AI 일정' : lang === 'en' ? 'AI Planner' : 'AI Төлөвлөгөө'}
-            </p>
-            <p className="text-white/75 text-[10px] leading-tight mt-0.5">
-              {lang === 'kr' ? '맞춤 여행 일정' : lang === 'en' ? 'Tailored itinerary' : 'Хувийн хуваарь'}
-            </p>
-          </button>
-
-          <button
-            onClick={() => navigate('/apps')}
-            className="bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl p-3 text-left active:scale-[0.97] transition-transform shadow-md shadow-indigo-500/20"
-          >
-            <div className="text-2xl mb-1">📱</div>
-            <p className="text-white font-black text-[13px] leading-tight">
-              {lang === 'kr' ? '몽골 필수 앱' : lang === 'en' ? 'Essential Apps' : 'Зайлшгүй апп'}
-            </p>
-            <p className="text-white/75 text-[10px] leading-tight mt-0.5">
-              {lang === 'kr' ? 'UBcab · TokTok · QPay' : lang === 'en' ? 'UBcab · TokTok · QPay' : 'UBcab · TokTok · QPay'}
-            </p>
-          </button>
         </div>
 
         {/* ── 미니 맵 (Google Maps) ── */}

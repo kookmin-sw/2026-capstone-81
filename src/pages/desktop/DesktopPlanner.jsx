@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
 import { generatePlanWithAI } from '../../utils/api'
 import { saveTrip, defaultTripTitle } from '../../utils/trips'
-import { Sparkles, Clock, Heart, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon, BookmarkPlus, Check, Loader, Wallet, Gauge, Users, Bed, Calendar } from 'lucide-react'
+import { Sparkles, Clock, MapPin, X, Backpack, Lightbulb, Sunrise, Sun, Moon, BookmarkPlus, Check, Loader, Users, Calendar, ChevronDown } from 'lucide-react'
+import { SEASONAL_INFO, MONTH_NAMES } from '../../data/seasonalInfo'
 
 function timeIcon(time) {
   const h = parseInt(time?.split(':')[0] ?? '9', 10)
@@ -18,6 +19,39 @@ function timeBg(time) {
   if (h < 12) return 'bg-amber-50 text-amber-600 border-amber-200'
   if (h < 18) return 'bg-orange-50 text-orange-600 border-orange-200'
   return 'bg-indigo-50 text-indigo-600 border-indigo-200'
+}
+
+const SEASONS = {
+  spring: { kr: '봄', en: 'Spring', mn: 'Хавар', emoji: '🌸', color: 'text-pink-600 bg-pink-50 border-pink-200' },
+  summer: { kr: '여름', en: 'Summer', mn: 'Зун',   emoji: '☀️', color: 'text-orange-500 bg-orange-50 border-orange-200' },
+  fall:   { kr: '가을', en: 'Autumn', mn: 'Намар', emoji: '🍂', color: 'text-amber-600 bg-amber-50 border-amber-200' },
+  winter: { kr: '겨울', en: 'Winter', mn: 'Өвөл',  emoji: '❄️', color: 'text-blue-500 bg-blue-50 border-blue-200' },
+}
+
+const TRANSPORT_MAP = {
+  walk:          { emoji: '🚶', kr: '도보',    en: 'Walk',        mn: 'Явган'          },
+  'private car': { emoji: '🚗', kr: '전용차',  en: 'Private Car', mn: 'Хувийн машин'   },
+  'shared van':  { emoji: '🚐', kr: '합승밴',  en: 'Shared Van',  mn: 'Нийтийн фургон' },
+  bus:           { emoji: '🚌', kr: '버스',    en: 'Bus',         mn: 'Автобус'        },
+  flight:        { emoji: '✈️', kr: '항공',    en: 'Flight',      mn: 'Нислэг'         },
+}
+
+const ROAD_TYPE_LABEL = {
+  paved:    { kr: '포장도로', en: 'Paved road',  mn: 'Хатуу зам'    },
+  dirt:     { kr: '비포장',   en: 'Dirt road',   mn: 'Хайрган зам'  },
+  'off-road':{ kr: '오프로드', en: 'Off-road',   mn: 'Замгүй газар' },
+  mixed:    { kr: '혼합',     en: 'Mixed road',  mn: 'Холимог зам'  },
+}
+
+function getDaySeason(startDate, dayNum) {
+  if (!startDate) return null
+  const d = new Date(startDate)
+  d.setDate(d.getDate() + dayNum - 1)
+  const m = d.getMonth() + 1
+  if (m >= 3 && m <= 5) return 'spring'
+  if (m >= 6 && m <= 8) return 'summer'
+  if (m >= 9 && m <= 11) return 'fall'
+  return 'winter'
 }
 
 const interestKeys = ['int_nature', 'int_culture', 'int_food', 'int_adventure', 'int_photo', 'int_history']
@@ -98,7 +132,19 @@ export default function DesktopPlanner() {
   const [genError, setGenError] = useState('')
   const [savingTrip, setSavingTrip] = useState(false)
   const [savedTripId, setSavedTripId] = useState(null)
+  const [expandedDays, setExpandedDays] = useState(new Set())
+  const [selectedMonth, setSelectedMonth] = useState(null)
+  const [selectedDay, setSelectedDay] = useState(null)
   const { user } = useAuth()
+
+
+  useEffect(() => {
+    if (selectedMonth === null) { setStartDate(''); return }
+    const now = new Date()
+    const year = (selectedMonth - 1) < now.getMonth() ? now.getFullYear() + 1 : now.getFullYear()
+    const d = selectedDay ?? 1
+    setStartDate(`${year}-${String(selectedMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+  }, [selectedMonth, selectedDay])
 
   const handleSaveTrip = async () => {
     if (!result || !user?.uid || savingTrip || savedTripId) return
@@ -141,6 +187,7 @@ export default function DesktopPlanner() {
         { budget, pace, groupType, accommodation },
       )
       setResult(plan)
+      setExpandedDays(new Set([1]))
     } catch (err) {
       console.error('[Planner] generate failed', err)
       const base =
@@ -166,6 +213,7 @@ export default function DesktopPlanner() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-10">
+
         <div className="grid grid-cols-2 gap-8 items-start">
           <div className="bg-white rounded-3xl shadow-sm p-8 space-y-8">
             <h2 className="text-lg font-black text-gray-900">{tr('planner_settings_title')}</h2>
@@ -209,66 +257,122 @@ export default function DesktopPlanner() {
               </div>
             </div>
 
-            {/* Interests */}
-            <div>
-              <label className="font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                <Heart size={16} className="text-primary" />
-                {tr('planner_interests')}
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {interestKeys.map(key => (
-                  <button
-                    key={key}
-                    onClick={() => toggleInterest(key)}
-                    className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 text-sm font-semibold transition-all ${
-                      interests.includes(key)
-                        ? 'bg-primary/5 border-primary text-primary'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    <span className="text-xl">{interestEmojis[key]}</span>
-                    {tr(key)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Budget */}
-            <OptionGrid
-              icon={Wallet} lang={lang} options={BUDGETS} value={budget} onChange={setBudget}
-              title={lang === 'kr' ? '예산 수준' : lang === 'en' ? 'Budget Level' : 'Төсөв'}
-            />
-
-            {/* Pace */}
-            <OptionGrid
-              icon={Gauge} lang={lang} options={PACES} value={pace} onChange={setPace}
-              title={lang === 'kr' ? '여행 페이스' : lang === 'en' ? 'Pace' : 'Хурд'}
-            />
-
             {/* Group */}
             <OptionGrid
               icon={Users} lang={lang} options={GROUPS} value={groupType} onChange={setGroupType} cols={4}
               title={lang === 'kr' ? '동행' : lang === 'en' ? 'Group' : 'Хэн нартай'}
             />
 
-            {/* Accommodation */}
-            <OptionGrid
-              icon={Bed} lang={lang} options={STAYS} value={accommodation} onChange={setAccommodation} cols={4}
-              title={lang === 'kr' ? '숙소 선호' : lang === 'en' ? 'Stay Type' : 'Байр'}
-            />
-
-            {/* Date + Departure */}
-            <div className="space-y-3">
+            {/* Month selector */}
+            <div className="space-y-4">
               <div>
-                <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                <label className="font-semibold text-gray-700 flex items-center gap-2 mb-3">
                   <Calendar size={16} className="text-primary" />
-                  {lang === 'kr' ? '시작 날짜 (선택)' : lang === 'en' ? 'Start Date (optional)' : 'Эхлэх огноо'}
+                  {lang === 'kr' ? '여행 월 선택 (선택)' : lang === 'en' ? 'Travel Month (optional)' : 'Аяллын сар'}
                 </label>
-                <input
-                  type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-primary"
-                />
+                <div className="grid grid-cols-4 gap-1.5">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+                    const seInfo = SEASONAL_INFO[m]
+                    const sData = SEASONS[seInfo.season]
+                    const isSelected = selectedMonth === m
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => { setSelectedMonth(prev => prev === m ? null : m); setSelectedDay(null) }}
+                        className={`flex flex-col items-center py-2.5 rounded-xl border-2 transition-all ${
+                          isSelected ? sData.color : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
+                        }`}
+                      >
+                        <span className="text-sm leading-none">{sData.emoji}</span>
+                        <span className="text-[10px] font-black mt-0.5">{MONTH_NAMES[lang]?.[m - 1]}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
+
+              {/* Seasonal info card */}
+              {selectedMonth && (() => {
+                const info = SEASONAL_INFO[selectedMonth]
+                const s = SEASONS[info.season]
+                return (
+                  <div className={`rounded-xl border p-3.5 space-y-2.5 ${s.color}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{s.emoji}</span>
+                      <span className="text-sm font-black">{s[lang] ?? s.en}</span>
+                      <span className="text-xs font-semibold opacity-60 ml-auto">{info.temp}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {info.events.map((ev, i) => (
+                        <p key={i} className="text-xs font-bold">{ev[lang] ?? ev.en}</p>
+                      ))}
+                    </div>
+                    {info.topRoutes.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-black opacity-60 mb-1.5">
+                          {lang === 'kr' ? '추천 루트' : lang === 'en' ? 'Top Routes' : 'Санал болгосон маршрут'}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {info.topRoutes.map((r, i) => (
+                            <span key={i} className="text-[11px] font-bold bg-white/60 px-2.5 py-0.5 rounded-full">
+                              {r[lang] ?? r.en}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {info.buses.length > 0 && (
+                      <div className="border-t border-current/20 pt-2.5">
+                        <p className="text-[10px] font-black opacity-60 mb-2">
+                          {lang === 'kr' ? '주요 교통편' : lang === 'en' ? 'Key Transport' : 'Гол тээвэр'}
+                        </p>
+                        {info.buses.map((b, i) => (
+                          <div key={i} className="flex items-start justify-between gap-2 mb-1.5 text-[11px]">
+                            <span className="font-bold leading-tight">{b.label[lang] ?? b.label.en}</span>
+                            <span className="opacity-70 text-right whitespace-nowrap">{b.departs} · {b.dur[lang] ?? b.dur.en}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Day picker — shown only after month is selected */}
+              {selectedMonth && (() => {
+                const now = new Date()
+                const year = (selectedMonth - 1) < now.getMonth() ? now.getFullYear() + 1 : now.getFullYear()
+                const daysInMonth = new Date(year, selectedMonth, 0).getDate()
+                return (
+                  <div>
+                    <p className="font-semibold text-gray-700 mb-2">
+                      {lang === 'kr' ? '날짜 선택 (선택)' : lang === 'en' ? 'Pick a Day (optional)' : 'Өдөр сонгох'}
+                      {selectedDay && (
+                        <span className="ml-2 text-primary text-xs font-black">
+                          {year}/{String(selectedMonth).padStart(2,'0')}/{String(selectedDay).padStart(2,'0')}
+                        </span>
+                      )}
+                    </p>
+                    <div className="grid grid-cols-7 gap-1">
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
+                        <button
+                          key={d}
+                          onClick={() => setSelectedDay(prev => prev === d ? null : d)}
+                          className={`aspect-square rounded-lg text-xs font-black flex items-center justify-center transition-all ${
+                            selectedDay === d
+                              ? 'bg-primary text-white shadow-sm shadow-primary/30'
+                              : 'bg-gray-50 text-gray-600 hover:bg-primary/10 hover:text-primary'
+                          }`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Departure city */}
               <div>
                 <label className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
                   <MapPin size={16} className="text-primary" />
@@ -279,6 +383,28 @@ export default function DesktopPlanner() {
                   placeholder="Ulaanbaatar"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-primary"
                 />
+              </div>
+            </div>
+
+            {/* Differentiator callout */}
+            <div className="bg-gradient-to-br from-violet-50 to-primary/5 border border-primary/20 rounded-2xl p-4">
+              <p className="text-xs font-black text-gray-800 mb-3">
+                {lang === 'kr' ? '✨ AI 플래너 vs 일반 여행사' : lang === 'en' ? '✨ AI Planner vs. Travel Agency' : '✨ AI Төлөвлөгч vs Аялал жуулчлал'}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { emoji: '🆓', kr: '완전 무료', en: 'Completely free', mn: 'Үнэгүй' },
+                  { emoji: '⚡', kr: '30초 즉시 생성', en: 'Ready in 30 sec', mn: '30 секундэд' },
+                  { emoji: '🎯', kr: '100% 맞춤 일정', en: '100% personalized', mn: '100% тохируулсан' },
+                  { emoji: '🗺', kr: '계절 최적화 루트', en: 'Season-smart routes', mn: 'Улирлын маршрут' },
+                  { emoji: '🚌', kr: '실제 교통 정보 포함', en: 'Real transport info', mn: 'Бодит тээвэр' },
+                  { emoji: '♾️', kr: '무제한 재생성', en: 'Unlimited retries', mn: 'Хязгааргүй' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                    <span className="text-sm">{item.emoji}</span>
+                    <span className="text-xs font-bold text-gray-700">{item[lang] ?? item.en}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -343,49 +469,138 @@ export default function DesktopPlanner() {
                 </div>
 
                 {/* Day cards */}
-                {(result.itinerary ?? []).map(day => (
+                {(result.itinerary ?? []).map(day => {
+                  const seasonKey = getDaySeason(startDate, day.day)
+                  const season = seasonKey ? SEASONS[seasonKey] : null
+                  const isOpen = expandedDays.has(day.day)
+                  const toggleDay = () => setExpandedDays(prev => {
+                    const next = new Set(prev)
+                    isOpen ? next.delete(day.day) : next.add(day.day)
+                    return next
+                  })
+                  return (
                   <div key={day.day} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    {/* Day header */}
-                    <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-primary/8 to-transparent border-b border-gray-100">
+                    {/* Day header — click to expand/collapse */}
+                    <button
+                      onClick={toggleDay}
+                      className="w-full flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-primary/8 to-transparent border-b border-gray-100 text-left hover:bg-primary/5 transition-colors"
+                    >
                       <span className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white text-sm font-black flex items-center justify-center flex-shrink-0 shadow-md shadow-primary/20">
                         {day.day}
                       </span>
-                      <div>
-                        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                          {lang === 'kr' ? `${day.day}일차` : lang === 'mn' ? `${day.day} өдөр` : `Day ${day.day}`}
-                        </p>
-                        <p className="font-black text-gray-900 text-sm leading-tight">{day.title}</p>
-                      </div>
-                    </div>
-
-                    {/* Activities timeline */}
-                    <div className="px-5 py-4 space-y-0">
-                      {day.activities.map((act, i) => (
-                        <div key={i} className="flex gap-4 relative">
-                          {/* Timeline line */}
-                          {i < day.activities.length - 1 && (
-                            <div className="absolute left-[22px] top-10 bottom-0 w-px bg-gray-100" />
-                          )}
-                          {/* Time + icon column */}
-                          <div className="flex flex-col items-center gap-1.5 flex-shrink-0 w-11">
-                            <div className={`w-9 h-9 rounded-full border flex items-center justify-center flex-shrink-0 bg-white ${timeBg(act.time)}`}>
-                              {timeIcon(act.time)}
-                            </div>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${timeBg(act.time)}`}>
-                              {act.time}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                            {lang === 'kr' ? `${day.day}일차` : lang === 'mn' ? `${day.day} өдөр` : `Day ${day.day}`}
+                          </p>
+                          {season && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${season.color}`}>
+                              {season.emoji} {season[lang] ?? season.en}
                             </span>
-                          </div>
-                          {/* Activity text */}
-                          <div className={`flex-1 ${i < day.activities.length - 1 ? 'pb-5' : 'pb-1'}`}>
-                            <p className="text-sm text-gray-700 leading-relaxed pt-1.5">
-                              {act.text.replace(/\*\*/g, '')}
-                            </p>
-                          </div>
+                          )}
+                          {day.estimated_drive_km > 0 && (
+                            <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                              🚗 {day.estimated_drive_km}km
+                            </span>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                        <p className="font-black text-gray-900 text-sm leading-tight truncate">{day.title}</p>
+                      </div>
+                      <ChevronDown
+                        size={16}
+                        className={`flex-shrink-0 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {/* Activities timeline — only when expanded */}
+                    {isOpen && (
+                      <div className="px-5 py-4 space-y-0">
+                        {day.activities.map((act, i) => {
+                          const isTransit = act.type === 'transit'
+                          const roadLabel = act.road_type && act.road_type !== 'none'
+                            ? (ROAD_TYPE_LABEL[act.road_type]?.[lang] ?? act.road_type)
+                            : null
+                          const transportInfo = act.transport && TRANSPORT_MAP[act.transport]
+                            ? TRANSPORT_MAP[act.transport]
+                            : null
+
+                          if (isTransit) {
+                            return (
+                              <div key={i} className="mb-4">
+                                <div className="flex items-stretch gap-3">
+                                  <div className="flex flex-col items-center flex-shrink-0 w-11">
+                                    <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-lg">
+                                      {transportInfo ? transportInfo.emoji : '🚙'}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                      <span className="text-xs font-black text-slate-600 uppercase tracking-wide">
+                                        {transportInfo ? (transportInfo[lang] ?? transportInfo.en) : 'Transit'}
+                                      </span>
+                                      <span className="text-[11px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
+                                        {act.time} {lang === 'kr' ? '출발' : lang === 'mn' ? 'гарна' : 'departs'}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 leading-relaxed mb-2">
+                                      {act.text.replace(/\*\*/g, '')}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {act.transit_km > 0 && (
+                                        <span className="text-[11px] text-slate-500 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">
+                                          📍 {act.transit_km}km
+                                        </span>
+                                      )}
+                                      {roadLabel && (
+                                        <span className="text-[11px] text-slate-500 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">
+                                          🛣 {roadLabel}
+                                        </span>
+                                      )}
+                                      {act.duration_min > 0 && (
+                                        <span className="text-[11px] text-slate-500 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">
+                                          ⏱ {act.duration_min >= 60
+                                            ? `${Math.floor(act.duration_min / 60)}${lang === 'mn' ? 'ц' : lang === 'kr' ? '시간' : 'h'}${act.duration_min % 60 ? ` ${act.duration_min % 60}${lang === 'mn' ? 'мин' : lang === 'kr' ? '분' : 'm'}` : ''}`
+                                            : `${act.duration_min}${lang === 'mn' ? 'мин' : lang === 'kr' ? '분' : 'm'}`}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          }
+
+                          return (
+                            <div key={i} className="flex gap-4 relative">
+                              {i < day.activities.length - 1 && (
+                                <div className="absolute left-[22px] top-10 bottom-0 w-px bg-gray-100" />
+                              )}
+                              <div className="flex flex-col items-center gap-1.5 flex-shrink-0 w-11">
+                                <div className={`w-9 h-9 rounded-full border flex items-center justify-center flex-shrink-0 bg-white ${timeBg(act.time)}`}>
+                                  {timeIcon(act.time)}
+                                </div>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${timeBg(act.time)}`}>
+                                  {act.time}
+                                </span>
+                              </div>
+                              <div className={`flex-1 ${i < day.activities.length - 1 ? 'pb-5' : 'pb-1'}`}>
+                                <p className="text-sm text-gray-700 leading-relaxed pt-1.5">
+                                  {act.text.replace(/\*\*/g, '')}
+                                </p>
+                                {transportInfo && (
+                                  <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                                    {transportInfo.emoji} {transportInfo[lang] ?? transportInfo.en}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  )
+                })}
 
                 {/* Packing list */}
                 {result.packing && result.packing.length > 0 && (

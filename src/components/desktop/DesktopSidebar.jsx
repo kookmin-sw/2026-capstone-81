@@ -1,13 +1,14 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLang } from '../../context/LangContext'
 import { useAuth } from '../../context/AuthContext'
-import { Home, Map, BookOpen, Heart, CalendarDays, Briefcase, User } from 'lucide-react'
+import { Home, Map, BookOpen, Heart, CalendarDays, Briefcase, User, Bus } from 'lucide-react'
 import { NomadLogoIcon, NomadLogoText } from '../NomadLogo'
 
 const navItems = [
   { icon: Home,         path: '/home',    label: { kr: '홈',        en: 'Home',       mn: 'Нүүр'         } },
-  { icon: Map,          path: '/map',     label: { kr: '지도',      en: 'Map',        mn: 'Газрын зураг' } },
-  { icon: CalendarDays, path: '/planner', label: { kr: 'AI 플래너', en: 'AI Planner', mn: 'Төлөвлөгч'    } },
+  { icon: Map,          path: '/map',       label: { kr: '지도',      en: 'Map',        mn: 'Газрын зураг' } },
+  { icon: CalendarDays, path: '/planner',   label: { kr: 'AI 플래너',  en: 'AI Planner',  mn: 'Төлөвлөгч'   } },
+  { icon: Bus,          path: '/transport', label: { kr: '교통편 찾기', en: 'Transport',  mn: 'Тээвэр'       } },
   { icon: Heart,        path: '/saved',   label: { kr: '저장',      en: 'Saved',      mn: 'Хадгалсан'    } },
   { icon: Briefcase,    path: '/saved',   label: { kr: '내 여행',   en: 'My Trips',   mn: 'Миний аяллууд'} },
   { icon: BookOpen,     path: '/blog',    label: { kr: '블로그',    en: 'Blog',       mn: 'Тэмдэглэл'    } },

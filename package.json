@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n \"SERVER,CLIENT\" -c \"cyan,green\" \"npm run server\" \"vite\"",
+    "server": "node --watch server/index.js",
     "dev:mobile": "vite --mode mobile --port 5173",
     "dev:desktop": "vite --mode desktop --port 5174",
     "build": "vite build",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "fast-check": "^3.22.0",
     "jsdom": "^24.0.0",
     "postcss": "^8.4.49",

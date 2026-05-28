@@ -7,11 +7,11 @@ export default {
   // Fallback chains — all three are live as of 2026-05. gemini-2.5-flash is
   // best quality but periodically returns 503 "high demand"; the request then
   // falls through to flash-latest, then the lighter flash-lite.
-  GEMINI_CHAT_MODELS: (process.env.GEMINI_CHAT_MODELS || 'gemini-2.5-flash,gemini-flash-latest,gemini-2.5-flash-lite')
+  GEMINI_CHAT_MODELS: (process.env.GEMINI_CHAT_MODELS || 'gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash')
     .split(',')
     .map(model => model.trim())
     .filter(Boolean),
-  GEMINI_PLAN_MODELS: (process.env.GEMINI_PLAN_MODELS || 'gemini-2.5-flash,gemini-flash-latest,gemini-2.5-flash-lite')
+  GEMINI_PLAN_MODELS: (process.env.GEMINI_PLAN_MODELS || 'gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash')
     .split(',')
     .map(model => model.trim())
     .filter(Boolean),

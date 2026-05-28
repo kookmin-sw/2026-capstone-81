@@ -14,6 +14,15 @@ function isRetryableModelError(err) {
     /429|500|502|503|quota|rate limit|service unavailable|high demand|temporar/i.test(msg)
 }
 
+// Model-level errors: the model doesn't exist or isn't accessible with this key.
+// Skip to the next model in the fallback chain instead of retrying or throwing.
+function isModelSkipError(err) {
+  const msg = err?.message || ''
+  return err?.status === 400 ||
+    err?.status === 404 ||
+    /not found|not supported|invalid.*model|model.*invalid|does not exist|is not supported/i.test(msg)
+}
+
 async function withModelFallback(modelIds, createRequest, attemptsPerModel = config.RETRY_ATTEMPTS) {
   let lastError
   for (const modelId of modelIds) {
@@ -22,9 +31,15 @@ async function withModelFallback(modelIds, createRequest, attemptsPerModel = con
         return await createRequest(modelId)
       } catch (err) {
         lastError = err
-        if (!isRetryableModelError(err)) throw err
-        console.warn(`[Gemini] ${modelId} attempt ${attempt} failed: ${err.message}`)
-        if (attempt < attemptsPerModel) await sleep(config.RETRY_DELAY_MS * attempt)
+        if (isRetryableModelError(err)) {
+          console.warn(`[Gemini] ${modelId} attempt ${attempt} failed (retryable): ${err.message}`)
+          if (attempt < attemptsPerModel) await sleep(config.RETRY_DELAY_MS * attempt)
+        } else if (isModelSkipError(err)) {
+          console.warn(`[Gemini] ${modelId} unavailable, trying next: ${err.message}`)
+          break // skip remaining attempts for this model, try next
+        } else {
+          throw err // fatal error (auth, etc.) — don't try other models
+        }
       }
     }
   }
@@ -72,6 +87,79 @@ export async function sendChatMessage(message, history = []) {
   return reply;
 }
 
+export async function generateRecommendations(month, season, temp, events, groupType, budget, interests, language) {
+  const eventsText = events.map(e => e.en).join('; ') || 'none'
+  const interestsText = interests.join(', ')
+
+  const prompt = `You are a professional Mongolia travel advisor. Recommend exactly 3 Mongolia destinations for this traveller.
+
+<traveller_profile>
+- Travel month: ${month} (${season}) — typical weather: ${temp}
+- Key events this month: ${eventsText}
+- Group type: ${groupType || 'unspecified'}
+- Budget: ${budget || 'mid'}
+- Interests: ${interestsText}
+</traveller_profile>
+
+<selection_criteria>
+- Prioritize experiential value for this SPECIFIC season/month above all else
+- Match destinations to group type and interests
+- Rank by uniqueness and seasonal fit, not just popularity
+- Include at least one less-touristy choice
+- Consider special events happening this month (if any)
+- Budget level should influence accommodation and activity recommendations
+</selection_criteria>
+
+<response_instructions>
+Respond entirely in ${language}. Return ONLY a valid JSON ARRAY (no markdown fences, no prose) of exactly 3 objects.
+</response_instructions>
+
+<json_schema>
+[
+  {
+    "name": "Destination name in ${language}",
+    "name_en": "Destination name in English (always English regardless of language setting)",
+    "region": "Central | Gobi | North | West | UB",
+    "emoji": "one relevant emoji",
+    "vibe": "single evocative word in ${language} (e.g. 어드벤처 / Adventure / Адал явдал)",
+    "season_reason": "2-3 sentences: why THIS destination is ideal THIS month specifically",
+    "activities": ["3-4 concrete seasonal activities with specific location names"],
+    "weather": "Actual temp range + conditions (e.g. -5~5°C, crisp blue skies)",
+    "tips": ["2 practical tips specific to this destination this month"],
+    "highlight": "ONE iconic must-do experience this season — one vivid sentence"
+  }
+]
+</json_schema>`
+
+  const result = await withModelFallback(config.GEMINI_PLAN_MODELS, async (modelId) => {
+    const model = genAI.getGenerativeModel({ model: modelId })
+    return model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        maxOutputTokens: 4096,
+        temperature: 0.75,
+        responseMimeType: 'application/json',
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    })
+  })
+
+  const text = result.response.text()
+  const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+
+  let parsed
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    const arrMatch = cleaned.match(/\[[\s\S]*\]/)
+    if (arrMatch) parsed = JSON.parse(arrMatch[0])
+    else throw new Error('No JSON array in response')
+  }
+
+  if (!Array.isArray(parsed)) throw new Error('Recommendations is not an array')
+  return parsed
+}
+
 export async function generateTravelPlan(days, interests, language, opts = {}) {
   // Accept the rich options object the new UI sends, but stay backwards
   // compatible with the legacy positional call (locations, startDate, ...).
@@ -108,7 +196,12 @@ export async function generateTravelPlan(days, interests, language, opts = {}) {
 - BUDGET: scale restaurant, accommodation, and activity choices to the budget level. budget=cheap street food + ger/guesthouse, mid=local restaurants + 3-star, premium=top restaurants + 4-5 star hotels.
 - PACE: relaxed=fewer stops + longer rests, normal=balanced, packed=more activities + earlier start.
 - GROUP: family=more breaks + kid-friendly; couple=romantic spots; friends=group-friendly food; solo=safety + meeting people.
-- SEASONALITY: if winter (Oct-Apr), prefer accessible winter activities; if summer, include outdoor festivals/Naadam if relevant to the date.
+- SEASONALITY: if winter (Oct-Apr), prefer accessible winter activities; if summer (Jul), include Naadam Festival (Jul 11-13) if relevant to the date.
+- TRANSPORT REFERENCE (use real departure times in transit activities):
+  Dragon Bus (dragonbus.mn): UB→Kharkhorin 07:00/09:00 ~5h; UB→Dalanzadgad (Gobi) 07:00 ~8-9h; UB→Erdenet 07:00 ~5h; UB→Darkhan multiple ~3h.
+  Flights (Hunnu Air/Aero Mongolia): UB→Mörön (for Khuvsgul) ~1.5h; UB→Bayan-Olgii ~2h; UB→Dalanzadgad ~1.5h.
+  Terelj: shared jeep from UB Central Market, 07:00-15:00 continuous, ~1.5-2h.
+  Special events: Naadam Jul 11-13 in UB/Kharkhorin; Eagle Festival Bayan-Olgii early Oct; Khuvsgul Ice Festival late Feb.
 </logistics_rules>
 
 <response_instructions>
@@ -136,7 +229,9 @@ Respond entirely in ${language}. Return ONLY a valid JSON OBJECT (no markdown fe
           "text": "Rich, sensory 25-40 word description: what they see/do/eat, why it matters.",
           "duration_min": 60,
           "cost_usd": 8,
-          "transport": "walk | private car | shared van | bus | flight"
+          "transport": "walk | private car | shared van | bus | flight",
+          "transit_km": 0,
+          "road_type": "none | paved | dirt | off-road | mixed"
         }
       ]
     }
@@ -153,6 +248,9 @@ Respond entirely in ${language}. Return ONLY a valid JSON OBJECT (no markdown fe
 - preparation: 3-6 trip-specific items (not generic "passport").
 - Use real Mongolian place names (English transliteration is fine: Erdene Zuu, Tsenkher Hot Spring, etc.).
 - Every day must contain at least one meal-type activity for lunch and one for dinner.
+- transit_km: for "transit" type activities set the realistic km driven; set 0 for all other activity types.
+- road_type: for "transit" activities specify the road surface ("paved" for city/highway, "dirt" for rural gravel, "off-road" for trackless steppe/desert, "mixed" for both); set "none" for non-transit activities.
+- For long driving days always include a dedicated "transit" activity at the start showing departure time, vehicle, route, km, and road type.
 </field_rules>
 
 Include practical survival tips and at least one hidden gem per day. Be specific — name actual restaurants, ger camps, and viewpoints whenever possible.`
